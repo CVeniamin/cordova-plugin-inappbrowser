@@ -19,6 +19,8 @@
 package org.apache.cordova.inappbrowser;
 
 import android.provider.Settings;
+import android.app.Activity;
+import android.content.Context;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.annotation.SuppressLint;
@@ -279,7 +281,7 @@ public class InAppBrowser extends CordovaPlugin {
         }
         else if (action.equals("goToSettings")) {
             if(dontKeepActivitiesEnabled()){
-                this.cordova.getActivity().runOnUiThread(new Runnable() {
+                activity.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         goToSettings();
