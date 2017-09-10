@@ -278,7 +278,7 @@ public class InAppBrowser extends CordovaPlugin {
             this.callbackContext.sendPluginResult(pluginResult);
         }
         else if (action.equals("goToSettings")) {
-            Activity activity = this.cordova.getActivity();
+            final Activity activity = this.cordova.getActivity();
             if(dontKeepActivitiesEnabled(activity)){
                 activity.runOnUiThread(new Runnable() {
                     @Override
