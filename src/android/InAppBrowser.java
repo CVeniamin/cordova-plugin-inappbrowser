@@ -278,8 +278,8 @@ public class InAppBrowser extends CordovaPlugin {
             this.callbackContext.sendPluginResult(pluginResult);
         }
         else if (action.equals("goToSettings")) {
-            if(dontKeepActivitiesEnabled()){
-                Activity activity = this.cordova.getActivity();
+            Activity activity = this.cordova.getActivity();
+            if(dontKeepActivitiesEnabled(activity)){
                 activity.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -310,8 +310,8 @@ public class InAppBrowser extends CordovaPlugin {
         }).create().show();
     }
 
-    private boolean dontKeepActivitiesEnabled() {
-	    return Settings.System.getInt(context.getContentResolver(), Settings.Global.ALWAYS_FINISH_ACTIVITIES, 0) == 1;
+    private boolean dontKeepActivitiesEnabled(Activity activity) {
+	    return Settings.System.getInt(activity.getApplicationContext().getContentResolver(), Settings.Global.ALWAYS_FINISH_ACTIVITIES, 0) == 1;
     }
 
     /**
