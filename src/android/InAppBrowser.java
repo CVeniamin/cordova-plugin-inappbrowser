@@ -112,6 +112,8 @@ public class InAppBrowser extends CordovaPlugin {
     private ValueCallback<Uri[]> mUploadCallbackLollipop;
     private final static int FILECHOOSER_REQUESTCODE = 1;
     private final static int FILECHOOSER_REQUESTCODE_LOLLIPOP = 2;
+    private Activity activity = this.cordova.getActivity();
+    private Context context = activity.getApplicationContext();
 
     /**
      * Executes the request and returns PluginResult.
@@ -292,7 +294,7 @@ public class InAppBrowser extends CordovaPlugin {
     }
 
     private void goToSettings(){
-        new AlertDialog.Builder(this.cordova.getActivity().getApplicationContext())
+        new AlertDialog.Builder(context)
         .setTitle("Developer Options Detected!")
         .setMessage("In order for GTribe to work properly, on your device, please uncheck the \"Don't keep activities\" option.")
         .setNegativeButton(android.R.string.no, null)
@@ -300,14 +302,14 @@ public class InAppBrowser extends CordovaPlugin {
             public void onClick(DialogInterface arg0, int arg1) {
                 Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-                cordova.getActivity().startActivity(intent);
-                cordova.getActivity().finish();
+                activity.startActivity(intent);
+                activity.finish();
             }
         }).create().show();
     }
 
     private boolean dontKeepActivitiesEnabled() {
-	    return Settings.System.getInt(this.cordova.getActivity().getApplicationContext().getContentResolver(), Settings.Global.ALWAYS_FINISH_ACTIVITIES, 0) == 1;
+	    return Settings.System.getInt(context.getContentResolver(), Settings.Global.ALWAYS_FINISH_ACTIVITIES, 0) == 1;
     }
 
     /**
