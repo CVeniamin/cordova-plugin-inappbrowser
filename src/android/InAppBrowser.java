@@ -114,8 +114,6 @@ public class InAppBrowser extends CordovaPlugin {
     private ValueCallback<Uri[]> mUploadCallbackLollipop;
     private final static int FILECHOOSER_REQUESTCODE = 1;
     private final static int FILECHOOSER_REQUESTCODE_LOLLIPOP = 2;
-    private 
-    private Context context = activity.getApplicationContext();
 
     /**
      * Executes the request and returns PluginResult.
