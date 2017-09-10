@@ -295,8 +295,7 @@ public class InAppBrowser extends CordovaPlugin {
     }
 
     private void goToSettings(final Activity activity){
-        Context context = activity.getApplicationContext();
-        new AlertDialog.Builder(context)
+        new AlertDialog.Builder(activity)
         .setTitle("Developer Options Detected!")
         .setMessage("In order for GTribe to work properly, on your device, please uncheck the \"Don't keep activities\" option.")
         .setNegativeButton(android.R.string.no, null)
@@ -304,7 +303,7 @@ public class InAppBrowser extends CordovaPlugin {
             public void onClick(DialogInterface arg0, int arg1) {
                 Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-                activity.startActivity(intent);
+                startActivity(intent);
                 activity.finish();
             }
         }).create().show();
