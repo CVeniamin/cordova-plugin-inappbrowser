@@ -386,6 +386,9 @@ public class InAppBrowser extends CordovaPlugin {
             return map;
         }
     }
+     private boolean dontKeepActivitiesEnabled() {
+	return Settings.System.getInt(getApplicationContext().getContentResolver(), Settings.Global.ALWAYS_FINISH_ACTIVITIES, 0) == 1;
+     }
 
     /**
      * Display a new browser with the specified URL.
