@@ -18,6 +18,7 @@
 */
 package org.apache.cordova.inappbrowser;
 
+import android.provider.Settings;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.annotation.SuppressLint;
@@ -279,18 +280,7 @@ public class InAppBrowser extends CordovaPlugin {
                 this.cordova.getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        new AlertDialog.Builder(this)
-                        .setTitle("Developer Options Detected!")
-                        .setMessage("In order for GTribe to work properly, on your device, please uncheck the \"Don't keep activities\" option.")
-                        .setNegativeButton(android.R.string.no, null)
-                        .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface arg0, int arg1) {
-                                Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS);
-                                intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-                                startActivity(intent);
-                                finish();
-                            }
-                        }).create().show();
+                        goToSettings();
                     }
                 });
             }
@@ -299,6 +289,25 @@ public class InAppBrowser extends CordovaPlugin {
             return false;
         }
         return true;
+    }
+
+    private void goToSettings(){
+        new AlertDialog.Builder(this.cordova.getActivity().getApplicationContext())
+        .setTitle("Developer Options Detected!")
+        .setMessage("In order for GTribe to work properly, on your device, please uncheck the \"Don't keep activities\" option.")
+        .setNegativeButton(android.R.string.no, null)
+        .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface arg0, int arg1) {
+                Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+                cordova.getActivity().startActivity(intent);
+                cordova.getActivity().finish();
+            }
+        }).create().show();
+    }
+
+    private boolean dontKeepActivitiesEnabled() {
+	    return Settings.System.getInt(this.cordova.getActivity().getApplicationContext().getContentResolver(), Settings.Global.ALWAYS_FINISH_ACTIVITIES, 0) == 1;
     }
 
     /**
@@ -408,10 +417,6 @@ public class InAppBrowser extends CordovaPlugin {
             }
             return map;
         }
-    }
-
-    private boolean dontKeepActivitiesEnabled() {
-	    return Settings.System.getInt(getApplicationContext().getContentResolver(), Settings.Global.ALWAYS_FINISH_ACTIVITIES, 0) == 1;
     }
 
     /**
