@@ -310,7 +310,9 @@ public class InAppBrowser extends CordovaPlugin {
      * Called by AccelBroker when listener is to be shut down.
      * Stop listener.
      */
+    
     public void onDestroy() {
+	LOG.d(LOG_TAG, "method called");
         closeDialog();
     }
 
@@ -840,7 +842,10 @@ public class InAppBrowser extends CordovaPlugin {
                 lp.height = WindowManager.LayoutParams.MATCH_PARENT;
 
                 dialog.setContentView(main);
-                dialog.show();
+		if(dialog != null && !dialog.isShowing()){
+			LOG.d(LOG_TAG, "called show method");
+			dialog.show();
+		}
                 dialog.getWindow().setAttributes(lp);
                 // the goal of openhidden is to load the url and not display it
                 // Show() needs to be called to cause the URL to be loaded
