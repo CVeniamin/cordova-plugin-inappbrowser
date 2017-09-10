@@ -18,6 +18,8 @@
 */
 package org.apache.cordova.inappbrowser;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
@@ -272,6 +274,27 @@ public class InAppBrowser extends CordovaPlugin {
             pluginResult.setKeepCallback(true);
             this.callbackContext.sendPluginResult(pluginResult);
         }
+        else if (action.equals("goToSettings")) {
+            if(dontKeepActivitiesEnabled()){
+                this.cordova.getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        new AlertDialog.Builder(this)
+                        .setTitle("Developer Options Detected!")
+                        .setMessage("In order for GTribe to work properly, on your device, please uncheck the \"Don't keep activities\" option.")
+                        .setNegativeButton(android.R.string.no, null)
+                        .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface arg0, int arg1) {
+                                Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS);
+                                intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+                                startActivity(intent);
+                                finish();
+                            }
+                        }).create().show();
+                    }
+                });
+            }
+        }
         else {
             return false;
         }
@@ -386,9 +409,10 @@ public class InAppBrowser extends CordovaPlugin {
             return map;
         }
     }
-     private boolean dontKeepActivitiesEnabled() {
-	return Settings.System.getInt(getApplicationContext().getContentResolver(), Settings.Global.ALWAYS_FINISH_ACTIVITIES, 0) == 1;
-     }
+
+    private boolean dontKeepActivitiesEnabled() {
+	    return Settings.System.getInt(getApplicationContext().getContentResolver(), Settings.Global.ALWAYS_FINISH_ACTIVITIES, 0) == 1;
+    }
 
     /**
      * Display a new browser with the specified URL.

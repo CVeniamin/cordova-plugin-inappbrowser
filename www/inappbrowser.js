@@ -17,7 +17,7 @@
  * specific language governing permissions and limitations
  * under the License.
  *
-*/
+ */
 
 (function() {
     // special patch to correctly work on Ripple emulator (CB-9760)
@@ -32,30 +32,33 @@
     var urlutil = require('cordova/urlutil');
 
     function InAppBrowser() {
-       this.channels = {
+        this.channels = {
             'loadstart': channel.create('loadstart'),
-            'loadstop' : channel.create('loadstop'),
-            'loaderror' : channel.create('loaderror'),
-            'exit' : channel.create('exit')
-       };
+            'loadstop': channel.create('loadstop'),
+            'loaderror': channel.create('loaderror'),
+            'exit': channel.create('exit')
+        };
     }
 
     InAppBrowser.prototype = {
-        _eventHandler: function (event) {
+        _eventHandler: function(event) {
             if (event && (event.type in this.channels)) {
                 this.channels[event.type].fire(event);
             }
         },
-        close: function (eventname) {
+        close: function(eventname) {
             exec(null, null, "InAppBrowser", "close", []);
         },
-        show: function (eventname) {
+        show: function(eventname) {
             exec(null, null, "InAppBrowser", "show", []);
         },
-        hide: function (eventname) {
+        hide: function(eventname) {
             exec(null, null, "InAppBrowser", "hide", []);
         },
-        addEventListener: function (eventname,f) {
+        goToSettings: function(eventname) {
+            exec(null, null, "InAppBrowser", "goToSettings", []);
+        },
+        addEventListener: function(eventname, f) {
             if (eventname in this.channels) {
                 this.channels[eventname].subscribe(f);
             }
@@ -103,7 +106,7 @@
         }
 
         var cb = function(eventname) {
-           iab._eventHandler(eventname);
+            iab._eventHandler(eventname);
         };
 
         strWindowFeatures = strWindowFeatures || "";
