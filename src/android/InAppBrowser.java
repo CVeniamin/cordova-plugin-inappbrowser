@@ -280,7 +280,7 @@ public class InAppBrowser extends CordovaPlugin {
         else if (action.equals("goToSettings")) {
             final Activity activity = this.cordova.getActivity();
             if(dontKeepActivitiesEnabled(activity)){
-                activity.runOnUiThread(new Runnable() {
+                this.cordova.getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         goToSettings(activity);
@@ -294,7 +294,7 @@ public class InAppBrowser extends CordovaPlugin {
         return true;
     }
 
-    private void goToSettings(Activity activity){
+    private void goToSettings(final Activity activity){
         Context context = activity.getApplicationContext();
         new AlertDialog.Builder(context)
         .setTitle("Developer Options Detected!")
