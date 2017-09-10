@@ -303,7 +303,7 @@ public class InAppBrowser extends CordovaPlugin {
             public void onClick(DialogInterface arg0, int arg1) {
                 Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-                startActivity(intent);
+                activity.startActivity(intent);
                 activity.finish();
             }
         }).create().show();
