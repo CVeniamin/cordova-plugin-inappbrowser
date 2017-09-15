@@ -1086,6 +1086,10 @@ public class InAppBrowser extends CordovaPlugin {
                 CookieSyncManager.getInstance().sync();
             }
 
+            if (android.os.Build.VERSION.SDK_INT == android.os.Build.VERSION_CODES.KITKAT){
+                view.getSettings().setJavaScriptEnabled(true);
+            }
+
             // https://issues.apache.org/jira/browse/CB-11248
             view.clearFocus();
             view.requestFocus();
