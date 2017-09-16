@@ -20,7 +20,6 @@ package org.apache.cordova.inappbrowser;
 
 import android.provider.Settings;
 import android.app.Activity;
-import android.content.Context;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.annotation.SuppressLint;
@@ -467,7 +466,14 @@ public class InAppBrowser extends CordovaPlugin {
                 childView.setWebViewClient(new WebViewClient() {
                     // NB: wait for about:blank before dismissing
                     public void onPageFinished(WebView view, String url) {
-                        if (dialog != null) {
+                        Context context = view.getContext();
+                        if(dialog == null || !dialog.isShowing()) return;
+                            if(context instanceof Activity) {
+                                if(!((Activity)context).isFinishing()) {
+                                    dialog.dismiss();
+                                    dialog = null;
+                                }
+                        } else {
                             dialog.dismiss();
                             dialog = null;
                         }
