@@ -798,6 +798,11 @@
     return UIStatusBarStyleLightContent;
 }
 
+- (UIColor)preferredStatusBarColor
+{
+    return [UIColor colorWithRed:0.13 green:0.13 blue:0.13 alpha:1.0];
+}
+
 - (BOOL)prefersStatusBarHidden {
     return NO;
 }
@@ -853,6 +858,13 @@
 {
     if (IsAtLeastiOSVersion(@"7.0")) {
         [[UIApplication sharedApplication] setStatusBarStyle:[self preferredStatusBarStyle]];
+	    
+    	UIView *statusBar = [[[UIApplication sharedApplication] valueForKey:@"statusBarWindow"] valueForKey:@"statusBar"];
+
+    	if ([statusBar respondsToSelector:@selector(setBackgroundColor:)]) {
+		statusBar.backgroundColor = [self preferredStatusBarColor];
+    	}
+    	
     }
     [self rePositionViews];
 
