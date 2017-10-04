@@ -18,6 +18,11 @@
 */
 package org.apache.cordova.inappbrowser;
 
+
+import android.provider.Settings;
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
@@ -272,12 +277,42 @@ public class InAppBrowser extends CordovaPlugin {
             pluginResult.setKeepCallback(true);
             this.callbackContext.sendPluginResult(pluginResult);
         }
-        else {
+		else if (action.equals("goToSettings")) {
+            final Activity activity = this.cordova.getActivity();
+            if(dontKeepActivitiesEnabled(activity)){
+                this.cordova.getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        goToSettings(activity);
+                    }
+                });
+            }
+		}
+		else {
             return false;
         }
         return true;
     }
 
+	private void goToSettings(final Activity activity){
+        new AlertDialog.Builder(activity)
+        .setTitle("Developer Options Detected!")
+        .setMessage("In order for GTribe to work properly, on your device, please uncheck the \"Don't keep activities\" option.")
+        .setNegativeButton(android.R.string.no, null)
+        .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface arg0, int arg1) {
+                Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+                activity.startActivity(intent);
+                activity.finish();
+            }
+        }).create().show();
+    }
+	
+	private boolean dontKeepActivitiesEnabled(Activity activity) {
+	    return Settings.System.getInt(activity.getApplicationContext().getContentResolver(), Settings.Global.ALWAYS_FINISH_ACTIVITIES, 0) == 1;
+    }
+	
     /**
      * Called when the view navigates.
      */
@@ -430,7 +465,15 @@ public class InAppBrowser extends CordovaPlugin {
                 childView.setWebViewClient(new WebViewClient() {
                     // NB: wait for about:blank before dismissing
                     public void onPageFinished(WebView view, String url) {
-                        if (dialog != null) {
+                        Context context = view.getContext();			    
+                        if(dialog == null || !dialog.isShowing()) return;
+                            if(context instanceof Activity) {
+                                if(!((Activity)context).isFinishing()) {
+                                   dialog.dismiss();
+                                    dialog = null;
+								}
+			    			}
+                        } else {
                             dialog.dismiss();
                             dialog = null;
                         }
@@ -840,7 +883,10 @@ public class InAppBrowser extends CordovaPlugin {
                 lp.height = WindowManager.LayoutParams.MATCH_PARENT;
 
                 dialog.setContentView(main);
-                dialog.show();
+				if(dialog != null && !dialog.isShowing()){
+					LOG.d(LOG_TAG, "called show method");
+					dialog.show();
+				}
                 dialog.getWindow().setAttributes(lp);
                 // the goal of openhidden is to load the url and not display it
                 // Show() needs to be called to cause the URL to be loaded
@@ -1045,7 +1091,8 @@ public class InAppBrowser extends CordovaPlugin {
             } else {
                 CookieSyncManager.getInstance().sync();
             }
-	if (android.os.Build.VERSION.SDK_INT == android.os.Build.VERSION_CODES.KITKAT){
+			
+			if (android.os.Build.VERSION.SDK_INT == android.os.Build.VERSION_CODES.KITKAT){
                     view.getSettings().setJavaScriptEnabled(true);
             }
 
