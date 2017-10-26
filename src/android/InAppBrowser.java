@@ -87,6 +87,8 @@ import java.io.IOException;
 import java.util.Date;
 import java.text.SimpleDateFormat;
 import android.os.Environment;
+import android.content.ClipData;
+
 
 @SuppressLint("SetJavaScriptEnabled")
 public class InAppBrowser extends CordovaPlugin {
@@ -1012,7 +1014,7 @@ public class InAppBrowser extends CordovaPlugin {
             photoSize = file.length();
 
         }catch (Exception e){
-            Log.e("Error!", "Error while opening image file" + e.getLocalizedMessage());
+            LOG.e(LOG_TAG, "Error while opening image file" + e.getLocalizedMessage());
         }
 
         if (intent != null || mCameraPhotoPath != null) {
@@ -1021,7 +1023,7 @@ public class InAppBrowser extends CordovaPlugin {
             try {
                 images = intent.getClipData();
             }catch (Exception e) {
-                Log.e("Error!", e.getLocalizedMessage());
+                LOG.e(LOG_TAG, e.getLocalizedMessage());
             }
 
             if (images == null && intent != null && intent.getDataString() != null) {
