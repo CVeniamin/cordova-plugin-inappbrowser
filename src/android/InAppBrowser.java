@@ -1094,7 +1094,7 @@ public class InAppBrowser extends CordovaPlugin {
         @SuppressLint("SimpleDateFormat") String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String imageFileName = "img_"+timeStamp+"_";
         File storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-        return File.createTempFile(imageFileName,".jpg",storageDir);
+        return File.createTempFile(imageFileName,".jpeg",storageDir);
     }
 
     /**
