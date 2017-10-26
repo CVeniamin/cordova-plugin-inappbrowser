@@ -1028,35 +1028,35 @@ public class InAppBrowser extends CordovaPlugin {
             mUploadCallbackLollipop = null;
         }*/
 
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             Uri[] results = null;
             //Check if response is positive
-            if(resultCode == Activity.RESULT_OK){
+            if (resultCode == Activity.RESULT_OK) {
                 LOG.d(LOG_TAG, "RESULT_OK");
 
-                if(requestCode == FILECHOOSER_REQUESTCODE_LOLLIPOP){
+                if (requestCode == FILECHOOSER_REQUESTCODE_LOLLIPOP) {
                     LOG.d(LOG_TAG, "FILECHOOSER_REQUESTCODE_LOLLIPOP_OK");
 
-                    if(mUploadCallbackLollipop == null){
+                    if (mUploadCallbackLollipop == null) {
                         super.onActivityResult(requestCode, resultCode, intent);
                         LOG.d(LOG_TAG, "mUploadCallbackLollipop == null");
 
                         return;
                     }
 
-                    if(intent == null){
+                    if (intent == null) {
                         //Capture Photo if no image available
                         LOG.d(LOG_TAG, "intent == null");
 
-                        if(mCallbackMedia != null){
+                        if (mCallbackMedia != null) {
 
                             LOG.d(LOG_TAG, "mCallbackMedia != null");
 
                             results = new Uri[]{Uri.parse(mCallbackMedia)};
                         }
-                    }else{
+                    } else {
                         String dataString = intent.getDataString();
-                        if(dataString != null){
+                        if (dataString != null) {
                             results = new Uri[]{Uri.parse(dataString)};
                             LOG.d(LOG_TAG, "results ");
                         }
@@ -1066,7 +1066,7 @@ public class InAppBrowser extends CordovaPlugin {
             LOG.d(LOG_TAG, "before receiveValue");
             mUploadCallbackLollipop.onReceiveValue(results);
             mUploadCallbackLollipop = null;
-
+        }
         // For Android < 5.0
         else {
             LOG.d(LOG_TAG, "onActivityResult (For Android < 5.0)");
