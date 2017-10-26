@@ -870,7 +870,7 @@ public class InAppBrowser extends CordovaPlugin {
                         chooserIntent.putExtra(Intent.EXTRA_TITLE, "Image Chooser");
                         chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
 
-                        cordova.startActivityForResult(cordova.getActivity(), chooserIntent, FILECHOOSER_REQUESTCODE_LOLLIPOP);
+                        cordova.startActivityForResult(InAppBrowser.this, chooserIntent, FILECHOOSER_REQUESTCODE_LOLLIPOP);
                         return true;
                     }
 
