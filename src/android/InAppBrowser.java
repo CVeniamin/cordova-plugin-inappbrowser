@@ -838,7 +838,7 @@ public class InAppBrowser extends CordovaPlugin {
                         mUploadCallbackLollipop = filePathCallback;
 
                         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                        if(takePictureIntent.resolveActivity(cordova.getActivity().this.getPackageManager()) != null){
+                        if(takePictureIntent.resolveActivity(cordova.getActivity().getPackageManager()) != null){
                             File photoFile = null;
                             try{
                                 photoFile = createImageFile();
@@ -870,7 +870,7 @@ public class InAppBrowser extends CordovaPlugin {
                         chooserIntent.putExtra(Intent.EXTRA_TITLE, "Image Chooser");
                         chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
 
-                        cordova.startActivityForResult(cordova.getActivity().this, chooserIntent, FILECHOOSER_REQUESTCODE_LOLLIPOP);
+                        cordova.startActivityForResult(cordova.getActivity(), chooserIntent, FILECHOOSER_REQUESTCODE_LOLLIPOP);
                         return true;
                     }
 
