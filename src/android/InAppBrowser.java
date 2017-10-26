@@ -786,13 +786,16 @@ public class InAppBrowser extends CordovaPlugin {
                         }
                         mUploadCallbackLollipop = filePathCallback;
 
-                        // Create File Chooser Intent
-                        Intent content = new Intent(Intent.ACTION_GET_CONTENT);
-                        content.addCategory(Intent.CATEGORY_OPENABLE);
-                        content.setType("*/*");
+                        Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
+                        contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
+                        contentSelectionIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                        contentSelectionIntent.setType("image/*");
 
-                        // Run cordova startActivityForResult
-                        cordova.startActivityForResult(InAppBrowser.this, Intent.createChooser(content, "Select File"), FILECHOOSER_REQUESTCODE_LOLLIPOP);
+                        Intent chooserIntent = new Intent(Intent.ACTION_CHOOSER);
+                        chooserIntent.putExtra(Intent.EXTRA_INTENT, contentSelectionIntent);
+                        chooserIntent.putExtra(Intent.EXTRA_TITLE, "Image Chooser");
+
+                        cordova.startActivityForResult(InAppBrowser.this, Intent.createChooser(chooserIntent, "Select images"), FILECHOOSER_REQUESTCODE_LOLLIPOP);
                         return true;
                     }
 
