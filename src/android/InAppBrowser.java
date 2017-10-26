@@ -78,7 +78,6 @@ import java.util.StringTokenizer;
 import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -86,6 +85,8 @@ import android.content.pm.PackageManager;
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
+import java.text.SimpleDateFormat;
+import android.os.Environment;
 
 @SuppressLint("SetJavaScriptEnabled")
 public class InAppBrowser extends CordovaPlugin {
@@ -792,9 +793,13 @@ public class InAppBrowser extends CordovaPlugin {
                 inAppWebView.setId(Integer.valueOf(6));
                 // File Chooser Implemented ChromeClient
 
-                if(Build.VERSION.SDK_INT >=23 && (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)) {
-                    ActivityCompat.requestPermissions(InAppBrowser.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA}, 1);
+                Activity activity = cordova.getActivity();
+                Context context = activity.getApplicationContext();
+
+                if(Build.VERSION.SDK_INT >= 23 && (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)) {
+                    ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA}, 1);
                 }
+
 
                 inAppWebView.setWebChromeClient(new InAppChromeClient(thatWebView) {
                     // For Android 5.0+
@@ -833,13 +838,13 @@ public class InAppBrowser extends CordovaPlugin {
                         mUploadCallbackLollipop = filePathCallback;
 
                         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                        if(takePictureIntent.resolveActivity(MainActivity.this.getPackageManager()) != null){
+                        if(takePictureIntent.resolveActivity(cordova.getActivity().this.getPackageManager()) != null){
                             File photoFile = null;
                             try{
-                                photoFile = InAppBrowser.createImageFile();
+                                photoFile = createImageFile();
                                 takePictureIntent.putExtra("PhotoPath", mCallbackMedia);
                             }catch(IOException ex){
-                                Log.e(TAG, "Image file creation failed", ex);
+                                LOG.e(LOG_TAG, "Image file creation failed", ex);
                             }
                             if(photoFile != null){
                                 mCallbackMedia = "file:" + photoFile.getAbsolutePath();
@@ -865,7 +870,7 @@ public class InAppBrowser extends CordovaPlugin {
                         chooserIntent.putExtra(Intent.EXTRA_TITLE, "Image Chooser");
                         chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
 
-                        cordova.startActivityForResult(InAppBrowser.this, chooserIntent, FILECHOOSER_REQUESTCODE_LOLLIPOP);
+                        cordova.startActivityForResult(cordova.getActivity().this, chooserIntent, FILECHOOSER_REQUESTCODE_LOLLIPOP);
                         return true;
                     }
 
@@ -1031,7 +1036,7 @@ public class InAppBrowser extends CordovaPlugin {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             Uri[] results = null;
             //Check if response is positive
-            if (resultCode == Activity.RESULT_OK) {
+            if (resultCode == this.cordova.getActivity().RESULT_OK) {
                 LOG.d(LOG_TAG, "RESULT_OK");
 
                 if (requestCode == FILECHOOSER_REQUESTCODE_LOLLIPOP) {
