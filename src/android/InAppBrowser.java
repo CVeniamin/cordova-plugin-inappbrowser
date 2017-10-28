@@ -794,20 +794,19 @@ public class InAppBrowser extends CordovaPlugin {
                 inAppWebView.setId(Integer.valueOf(6));
                 // File Chooser Implemented ChromeClient
 
-                Activity activity = cordova.getActivity();
-                Context context = activity.getApplicationContext();
-
-                if(Build.VERSION.SDK_INT >= 23 && (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)) {
-                    ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA}, 1);
-                }
-
-
                 inAppWebView.setWebChromeClient(new InAppChromeClient(thatWebView) {
                     // For Android 5.0+
                     public boolean onShowFileChooser(
                             WebView webView, ValueCallback<Uri[]> filePathCallback,
                             WebChromeClient.FileChooserParams fileChooserParams){
                         LOG.d(LOG_TAG, "Moded File Chooser 5.0+");
+
+                        Activity activity = cordova.getActivity();
+                        Context context = activity.getApplicationContext();
+
+                        if(Build.VERSION.SDK_INT >= 23 && (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)) {
+                            ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA}, 1);
+                        }
 
                         if(mUploadCallbackLollipop != null) {
                             mUploadCallbackLollipop.onReceiveValue(null);
@@ -1007,47 +1006,20 @@ public class InAppBrowser extends CordovaPlugin {
             return;
         }
 
-        try {
-            String file_path = mCameraPhotoPath.replace("file:","");
-            File file = new File(file_path);
-            photoSize = file.length();
-
-        }catch (Exception e){
-            LOG.e(LOG_TAG, "Error while opening image file" + e.getLocalizedMessage());
-        }
-
-        if (intent != null || mCameraPhotoPath != null) {
-            Integer count = 1;
-            ClipData images = null;
-            try {
-                images = intent.getClipData();
-            }catch (Exception e) {
-                LOG.e(LOG_TAG, e.getLocalizedMessage());
-            }
-
-            if (images == null && intent != null && intent.getDataString() != null) {
-                count = intent.getDataString().length();
-            } else if (images != null) {
-                count = images.getItemCount();
-            }
-            Uri[] results = new Uri[count];
-            // Check that the response is a good one
-            if (resultCode == cordova.getActivity().RESULT_OK) {
-                if (photoSize != 0) {
-                    // If there is not intent, then we may have taken a photo
-                    if (mCameraPhotoPath != null) {
-                        results = new Uri[]{Uri.parse(mCameraPhotoPath)};
-                    }
-                } else if (intent.getClipData() == null) {
-                    results = new Uri[]{Uri.parse(intent.getDataString())};
-                } else {
-
-                    for (int i = 0; i < images.getItemCount(); i++) {
-                        results[i] = images.getItemAt(i).getUri();
-                    }
+        Uri[] results = null;
+        // Check that the response is a good one
+        if (resultCode == cordova.getActivity().RESULT_OK) {
+            if(intent == null){
+                // If there is not intent, then we may have taken a photo
+                if (mCameraPhotoPath != null) {
+                    results = new Uri[]{Uri.parse(mCameraPhotoPath)};
+                }
+            } else {
+                String dataString = intent.getDataString();
+                if (dataString != null) {
+                    results = new Uri[]{Uri.parse(dataString)};
                 }
             }
-
             mUploadCallbackLollipop.onReceiveValue(results);
             mUploadCallbackLollipop = null;
         }
