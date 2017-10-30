@@ -132,6 +132,7 @@ public class InAppBrowser extends CordovaPlugin {
     private ValueCallback<Uri[]> mUploadCallbackLollipop;
     private final static int FILECHOOSER_REQUESTCODE = 1;
     private final static int FILECHOOSER_REQUESTCODE_LOLLIPOP = 2;
+    private long size = 0;
 
     /**
      * Executes the request and returns PluginResult.
@@ -815,7 +816,7 @@ public class InAppBrowser extends CordovaPlugin {
                         mUploadCallbackLollipop = filePathCallback;
 
                         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                        if(takePictureIntent.resolveActivity(cordova.getActivity().getPackageManager()) != null){
+                        if(takePictureIntent.resolveActivity(context.getPackageManager()) != null){
                             File photoFile = null;
                             try{
                                 photoFile = createImageFile();
@@ -836,6 +837,7 @@ public class InAppBrowser extends CordovaPlugin {
 
                         Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
                         contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
+                        contentSelectionIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
                         contentSelectionIntent.setType("image/*");
 
                         Intent[] intentArray;
@@ -850,7 +852,7 @@ public class InAppBrowser extends CordovaPlugin {
                         chooserIntent.putExtra(Intent.EXTRA_TITLE, "Choose a image");
                         chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
 
-                        cordova.startActivityForResult(InAppBrowser.this, chooserIntent, FILECHOOSER_REQUESTCODE_LOLLIPOP);
+                        cordova.startActivityForResult(Intent.createChooser(chooserIntent, "Select images"), FILECHOOSER_REQUESTCODE_LOLLIPOP);
                         return true;
                     }
 
@@ -878,14 +880,17 @@ public class InAppBrowser extends CordovaPlugin {
                 WebViewClient client = new InAppBrowserClient(thatWebView, edittext);
                 inAppWebView.setWebViewClient(client);
                 WebSettings settings = inAppWebView.getSettings();
-
                 if(Build.VERSION.SDK_INT >= 21){
                     settings.setMixedContentMode(0);
+                }
+
+                if (Build.VERSION.SDK_INT >= 19) {
                     inAppWebView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
                 }
 
                 settings.setJavaScriptEnabled(true);
                 settings.setJavaScriptCanOpenWindowsAutomatically(true);
+                settings.setAllowFileAccess(true);
                 settings.setBuiltInZoomControls(showZoomControls);
                 settings.setPluginState(android.webkit.WebSettings.PluginState.ON);
 
@@ -1001,7 +1006,7 @@ public class InAppBrowser extends CordovaPlugin {
      */
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         // For Android >= 5.0
-        if (requestCode != FILECHOOSER_REQUESTCODE || mUploadCallbackLollipop == null) {
+        /*if (requestCode != FILECHOOSER_REQUESTCODE || mUploadCallbackLollipop == null) {
             super.onActivityResult(requestCode, resultCode, intent);
             return;
         }
@@ -1022,6 +1027,56 @@ public class InAppBrowser extends CordovaPlugin {
             }
             mUploadCallbackLollipop.onReceiveValue(results);
             mUploadCallbackLollipop = null;
+        }*/
+
+        if (requestCode != FILECHOOSER_REQUESTCODE_LOLLIPOP || mUploadCallbackLollipop == null) {
+            super.onActivityResult(requestCode, resultCode, intent);
+            return;
+        }
+
+        try {
+            String file_path = mCameraPhotoPath.replace("file:","");
+            File file = new File(file_path);
+            size = file.length();
+        }catch (Exception e){
+            LOG.e(LOG_TAG, "Error while opening image file" + e.getLocalizedMessage());
+        }
+
+        if (intent != null || mCameraPhotoPath != null) {
+            Integer count = 1;
+            ClipData images = null;
+            try {
+                images = intent.getClipData();
+            } catch (Exception e) {
+                LOG.e(LOG_TAG, "error intent getClipData intent != null and mCameraPhotoPath != null" + e.getLocalizedMessage());
+            }
+
+            if (images == null && intent != null && intent.getDataString() != null) {
+                count = intent.getDataString().length();
+            } else if (images != null) {
+                count = images.getItemCount();
+            }
+            Uri[] results = new Uri[count];
+            // Check that the response is a good one
+            if (resultCode == cordova.getActivity().RESULT_OK) {
+                if (size != 0) {
+                    // If there is not data, then we may have taken a photo
+                    if (mCameraPhotoPath != null) {
+                        LOG.e(LOG_TAG, "error mCameraPhotoPath  != null" + e.getLocalizedMessage());
+                        results = new Uri[]{Uri.parse(mCameraPhotoPath)};
+                    }
+                } else if (intent.getClipData() == null) {
+                    LOG.e(LOG_TAG, "error intent.getClipData == null" + e.getLocalizedMessage());
+                    results = new Uri[]{Uri.parse(intent.getDataString())};
+                } else {
+                    for (int i = 0; i < images.getItemCount(); i++) {
+                        results[i] = images.getItemAt(i).getUri();
+                    }
+                }
+            }
+
+            mUploadCallbackLollipop.onReceiveValue(results);
+            mUploadCallbackLollipop = null;
         }
 
         // For Android < 5.0
@@ -1040,6 +1095,8 @@ public class InAppBrowser extends CordovaPlugin {
             mUploadCallback = null;
         }
     }
+
+
 
     private File createImageFile() throws IOException {
         // Create an image file name
