@@ -852,7 +852,7 @@ public class InAppBrowser extends CordovaPlugin {
                         chooserIntent.putExtra(Intent.EXTRA_TITLE, "Choose a image");
                         chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
 
-                        cordova.startActivityForResult(Intent.createChooser(chooserIntent, "Select images"), FILECHOOSER_REQUESTCODE_LOLLIPOP);
+                        cordova.startActivityForResult(InAppBrowser.this, Intent.createChooser(chooserIntent, "Select images"), FILECHOOSER_REQUESTCODE_LOLLIPOP);
                         return true;
                     }
 
@@ -1062,11 +1062,11 @@ public class InAppBrowser extends CordovaPlugin {
                 if (size != 0) {
                     // If there is not data, then we may have taken a photo
                     if (mCameraPhotoPath != null) {
-                        LOG.e(LOG_TAG, "error mCameraPhotoPath  != null" + e.getLocalizedMessage());
+                        LOG.e(LOG_TAG, "error mCameraPhotoPath  != null");
                         results = new Uri[]{Uri.parse(mCameraPhotoPath)};
                     }
                 } else if (intent.getClipData() == null) {
-                    LOG.e(LOG_TAG, "error intent.getClipData == null" + e.getLocalizedMessage());
+                    LOG.e(LOG_TAG, "error intent.getClipData == null");
                     results = new Uri[]{Uri.parse(intent.getDataString())};
                 } else {
                     for (int i = 0; i < images.getItemCount(); i++) {
