@@ -134,6 +134,11 @@ public class InAppBrowser extends CordovaPlugin {
     private final static int FILECHOOSER_REQUESTCODE_LOLLIPOP = 2;
     private long size = 0;
 
+    private String mCM;
+    private ValueCallback<Uri> mUM;
+    private ValueCallback<Uri[]> mUMA;
+    private final static int FCR=1;
+
     /**
      * Executes the request and returns PluginResult.
      *
@@ -795,88 +800,6 @@ public class InAppBrowser extends CordovaPlugin {
                 inAppWebView.setId(Integer.valueOf(6));
                 // File Chooser Implemented ChromeClient
 
-                inAppWebView.setWebChromeClient(new InAppChromeClient(thatWebView) {
-                    // For Android 5.0+
-                    public boolean onShowFileChooser(
-                            WebView webView, ValueCallback<Uri[]> filePathCallback,
-                            WebChromeClient.FileChooserParams fileChooserParams){
-                        LOG.d(LOG_TAG, "Moded File Chooser 5.0+");
-
-                        Activity activity = cordova.getActivity();
-                        Context context = activity.getApplicationContext();
-
-                        if(Build.VERSION.SDK_INT >= 23 && (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)) {
-                            ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA}, 1);
-                        }
-
-                        if(mUploadCallbackLollipop != null) {
-                            mUploadCallbackLollipop.onReceiveValue(null);
-                        }
-
-                        mUploadCallbackLollipop = filePathCallback;
-
-                        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                        if(takePictureIntent.resolveActivity(context.getPackageManager()) != null){
-                            File photoFile = null;
-                            try{
-                                photoFile = createImageFile();
-                                takePictureIntent.putExtra("PhotoPath", mCameraPhotoPath);
-                            }catch(IOException ex){
-                                LOG.e(LOG_TAG, "Image file creation failed", ex);
-                            }
-                            if(photoFile != null){
-                                mCameraPhotoPath = "file:" + photoFile.getAbsolutePath();
-                                LOG.e(LOG_TAG, "Image created with success");
-                                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(photoFile));
-                            }else{
-                                takePictureIntent = null;
-                            }
-                        }
-
-                        LOG.d(LOG_TAG, "Moded File Chooser 5.0+");
-
-                        Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
-                        contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
-                        contentSelectionIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-                        contentSelectionIntent.setType("image/*");
-
-                        Intent[] intentArray;
-                        if (takePictureIntent != null) {
-                            intentArray = new Intent[]{takePictureIntent};
-                        } else {
-                            intentArray = new Intent[0];
-                        }
-
-                        Intent chooserIntent = new Intent(Intent.ACTION_CHOOSER);
-                        chooserIntent.putExtra(Intent.EXTRA_INTENT, contentSelectionIntent);
-                        chooserIntent.putExtra(Intent.EXTRA_TITLE, "Choose a image");
-                        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
-
-                        cordova.startActivityForResult(InAppBrowser.this, Intent.createChooser(chooserIntent, "Select images"), FILECHOOSER_REQUESTCODE_LOLLIPOP);
-                        return true;
-                    }
-
-                    // For Android 4.1+
-                    public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType, String capture)
-                    {
-                        LOG.d(LOG_TAG, "File Chooser 4.1+");
-                        // Call file chooser for Android 3.0+
-                        openFileChooser(uploadMsg, acceptType);
-                    }
-
-                    // For Android 3.0+
-                    public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType)
-                    {
-                        LOG.d(LOG_TAG, "File Chooser 3.0+");
-                        mUploadCallback = uploadMsg;
-                        Intent content = new Intent(Intent.ACTION_GET_CONTENT);
-                        content.addCategory(Intent.CATEGORY_OPENABLE);
-
-                        // run startActivityForResult
-                        cordova.startActivityForResult(InAppBrowser.this, Intent.createChooser(content, "Select File"), FILECHOOSER_REQUESTCODE);
-                    }
-
-                });
                 WebViewClient client = new InAppBrowserClient(thatWebView, edittext);
                 inAppWebView.setWebViewClient(client);
                 WebSettings settings = inAppWebView.getSettings();
@@ -917,6 +840,125 @@ public class InAppBrowser extends CordovaPlugin {
                     settings.setDatabaseEnabled(true);
                 }
                 settings.setDomStorageEnabled(true);
+
+                inAppWebView.setWebChromeClient(new InAppChromeClient(thatWebView) {
+                    // For Android 5.0+
+                    public boolean onShowFileChooser(
+                            WebView webView, ValueCallback<Uri[]> filePathCallback,
+                            WebChromeClient.FileChooserParams fileChooserParams){
+                        LOG.d(LOG_TAG, "Moded File Chooser 5.0+");
+
+                        Activity activity = cordova.getActivity();
+                        Context context = activity.getApplicationContext();
+
+                        if(Build.VERSION.SDK_INT >= 23 && (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)) {
+                            ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA}, 1);
+                        }
+
+                        /*if(mUploadCallbackLollipop != null) {
+                            mUploadCallbackLollipop.onReceiveValue(null);
+                        }
+
+                        mUploadCallbackLollipop = filePathCallback;
+
+                        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                        if(takePictureIntent.resolveActivity(context.getPackageManager()) != null){
+                            File photoFile = null;
+                            try{
+                                photoFile = createImageFile();
+                                takePictureIntent.putExtra("PhotoPath", mCameraPhotoPath);
+                            }catch(IOException ex){
+                                LOG.e(LOG_TAG, "Image file creation failed", ex);
+                            }
+                            if(photoFile != null){
+                                mCameraPhotoPath = "file:" + photoFile.getAbsolutePath();
+                                LOG.e(LOG_TAG, "Image created with success");
+                                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(photoFile));
+                            }else{
+                                takePictureIntent = null;
+                            }
+                        }
+
+                        LOG.d(LOG_TAG, "Moded File Chooser 5.0+");
+
+                        Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
+                        contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
+                        contentSelectionIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                        contentSelectionIntent.setType("**//*");
+
+                        /*Intent[] intentArray;
+                        if (takePictureIntent != null) {
+                            intentArray = new Intent[]{takePictureIntent};
+                        } else {
+                            intentArray = new Intent[0];
+                        }
+
+                        Intent chooserIntent = new Intent(Intent.ACTION_CHOOSER);
+                        chooserIntent.putExtra(Intent.EXTRA_INTENT, contentSelectionIntent);
+                        chooserIntent.putExtra(Intent.EXTRA_TITLE, "Choose a image");
+                        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);*/
+
+                        if(mUMA != null){
+                            mUMA.onReceiveValue(null);
+                        }
+
+                        mUMA = filePathCallback;
+                        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                        if(takePictureIntent.resolveActivity(context.getPackageManager()) != null){
+                            File photoFile = null;
+                            try{
+                                photoFile = createImageFile();
+                                takePictureIntent.putExtra("PhotoPath", mCM);
+                            }catch(IOException ex){
+                                Log.e(TAG, "Image file creation failed", ex);
+                            }
+                            if(photoFile != null){
+                                mCM = "file:" + photoFile.getAbsolutePath();
+                                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(photoFile));
+                            }else{
+                                takePictureIntent = null;
+                            }
+                        }
+                        Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
+                        contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
+                        contentSelectionIntent.setType("*/*");
+                        Intent[] intentArray;
+                        if(takePictureIntent != null){
+                            intentArray = new Intent[]{takePictureIntent};
+                        }else{
+                            intentArray = new Intent[0];
+                        }
+
+                        Intent chooserIntent = new Intent(Intent.ACTION_CHOOSER);
+                        chooserIntent.putExtra(Intent.EXTRA_INTENT, contentSelectionIntent);
+                        chooserIntent.putExtra(Intent.EXTRA_TITLE, "Add image from");
+                        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
+
+                        cordova.startActivityForResult(InAppBrowser.this, chooserIntent, FCR);
+                        return true;
+                    }
+
+                    // For Android 4.1+
+                    public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType, String capture)
+                    {
+                        LOG.d(LOG_TAG, "File Chooser 4.1+");
+                        // Call file chooser for Android 3.0+
+                        openFileChooser(uploadMsg, acceptType);
+                    }
+
+                    // For Android 3.0+
+                    public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType)
+                    {
+                        LOG.d(LOG_TAG, "File Chooser 3.0+");
+                        mUploadCallback = uploadMsg;
+                        Intent content = new Intent(Intent.ACTION_GET_CONTENT);
+                        content.addCategory(Intent.CATEGORY_OPENABLE);
+
+                        // run startActivityForResult
+                        cordova.startActivityForResult(InAppBrowser.this, Intent.createChooser(content, "Select File"), FILECHOOSER_REQUESTCODE);
+                    }
+
+                });
 
                 if (clearAllCache) {
                     CookieManager.getInstance().removeAllCookie();
@@ -1029,54 +1071,30 @@ public class InAppBrowser extends CordovaPlugin {
             mUploadCallbackLollipop = null;
         }*/
 
-        if (requestCode != FILECHOOSER_REQUESTCODE_LOLLIPOP || mUploadCallbackLollipop == null) {
-            super.onActivityResult(requestCode, resultCode, intent);
-            return;
-        }
-
-        try {
-            String file_path = mCameraPhotoPath.replace("file:","");
-            File file = new File(file_path);
-            size = file.length();
-        }catch (Exception e){
-            LOG.e(LOG_TAG, "Error while opening image file" + e.getLocalizedMessage());
-        }
-
-        if (intent != null || mCameraPhotoPath != null) {
-            Integer count = 1;
-            ClipData images = null;
-            try {
-                images = intent.getClipData();
-            } catch (Exception e) {
-                LOG.e(LOG_TAG, "error intent getClipData intent != null and mCameraPhotoPath != null" + e.getLocalizedMessage());
-            }
-
-            if (images == null && intent != null && intent.getDataString() != null) {
-                count = intent.getDataString().length();
-            } else if (images != null) {
-                count = images.getItemCount();
-            }
-            Uri[] results = new Uri[count];
-            // Check that the response is a good one
-            if (resultCode == cordova.getActivity().RESULT_OK) {
-                if (size != 0) {
-                    // If there is not data, then we may have taken a photo
-                    if (mCameraPhotoPath != null) {
-                        LOG.e(LOG_TAG, "error mCameraPhotoPath  != null");
-                        results = new Uri[]{Uri.parse(mCameraPhotoPath)};
+        super.onActivityResult(requestCode, resultCode, intent);
+        if(Build.VERSION.SDK_INT >= 21){
+            Uri[] results = null;
+            //Check if response is positive
+            if(resultCode == Activity.RESULT_OK){
+                if(requestCode == FCR){
+                    if(null == mUMA){
+                        return;
                     }
-                } else if (intent.getClipData() == null) {
-                    LOG.e(LOG_TAG, "error intent.getClipData == null");
-                    results = new Uri[]{Uri.parse(intent.getDataString())};
-                } else {
-                    for (int i = 0; i < images.getItemCount(); i++) {
-                        results[i] = images.getItemAt(i).getUri();
+                    if(intent == null){
+                        //Capture Photo if no image available
+                        if(mCM != null){
+                            results = new Uri[]{Uri.parse(mCM)};
+                        }
+                    }else{
+                        String dataString = intent.getDataString();
+                        if(dataString != null){
+                            results = new Uri[]{Uri.parse(dataString)};
+                        }
                     }
                 }
             }
-
-            mUploadCallbackLollipop.onReceiveValue(results);
-            mUploadCallbackLollipop = null;
+            mUMA.onReceiveValue(results);
+            mUMA = null;
         }
 
         // For Android < 5.0
