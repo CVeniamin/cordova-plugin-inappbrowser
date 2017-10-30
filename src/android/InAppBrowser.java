@@ -910,7 +910,7 @@ public class InAppBrowser extends CordovaPlugin {
                                 photoFile = createImageFile();
                                 takePictureIntent.putExtra("PhotoPath", mCM);
                             }catch(IOException ex){
-                                Log.e(TAG, "Image file creation failed", ex);
+                                LOG.e(LOG_TAG, "Image file creation failed", ex);
                             }
                             if(photoFile != null){
                                 mCM = "file:" + photoFile.getAbsolutePath();
