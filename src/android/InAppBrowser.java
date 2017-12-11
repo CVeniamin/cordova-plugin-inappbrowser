@@ -51,6 +51,7 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.WebChromeClient.FileChooserParams;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -853,9 +854,16 @@ public class InAppBrowser extends CordovaPlugin {
 
                         if(mUMA != null){
                             mUMA.onReceiveValue(null);
+                            mUMA = null;
                         }
 
                         mUMA = filePathCallback;
+                        /*try {
+                            Intent intent = fileChooserParams.createIntent();
+                            cordova.startActivityForResult(InAppBrowser.this, chooserIntent, FCR);
+                        } catch (Exception e) {
+                            // TODO: when open file chooser failed
+                        }*/
                         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                         if(takePictureIntent.resolveActivity(context.getPackageManager()) != null){
                             File photoFile = null;
@@ -874,7 +882,7 @@ public class InAppBrowser extends CordovaPlugin {
                         }
                         Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
                         contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
-                        contentSelectionIntent.setType("*/*");
+                        contentSelectionIntent.setType("image*//*");
                         Intent[] intentArray;
                         if(takePictureIntent != null){
                             intentArray = new Intent[]{takePictureIntent};
@@ -897,7 +905,7 @@ public class InAppBrowser extends CordovaPlugin {
                         mUM = uploadMsg;
                         Intent content = new Intent(Intent.ACTION_GET_CONTENT);
                         content.addCategory(Intent.CATEGORY_OPENABLE);
-                        content.setType("*/*");
+                        content.setType("image/*");
 
                         // run startActivityForResult
                         cordova.startActivityForResult(InAppBrowser.this, Intent.createChooser(content, "Select File"), FCR);
@@ -992,34 +1000,20 @@ public class InAppBrowser extends CordovaPlugin {
      */
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         // For Android >= 5.0
-        super.onActivityResult(requestCode, resultCode, intent);
         if(Build.VERSION.SDK_INT >= 21){
-            Uri[] results = null;
             //Check if response is positive
             if(resultCode == Activity.RESULT_OK){
-                if(requestCode == FCR){
-                    if(null == mUMA){
-                        return;
-                    }
-                    if(intent == null || intent.getData() == null){
-                        //Capture Photo if no image available
-                        if(mCM != null){
-                            results = new Uri[]{Uri.parse(mCM)};
-                        }
-                    }else{
-                        String dataString = intent.getDataString();
-                        if(dataString != null){
-                            results = new Uri[]{Uri.parse(dataString)};
-                        }
-                    }
+                LOG.d(LOG_TAG, "onActivityResult (For Android >= 5.0)");
+                // If RequestCode or Callback is Invalid
+                if(requestCode != FCR || mUMA == null) {
+                    super.onActivityResult(requestCode, resultCode, intent);
+                    return;
                 }
+                mUMA.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent));
+                mUMA = null;
             }
-            mUMA.onReceiveValue(results);
-            mUMA = null;
         }
-
-        // For Android < 5.0
-        else {
+        else { // For Android < 5.0
             if(requestCode == FCR){
                 if(null == mUM) return;
                 Uri result = intent == null || resultCode != Activity.RESULT_OK ? null : intent.getData();
@@ -1030,6 +1024,7 @@ public class InAppBrowser extends CordovaPlugin {
     }	
     private File createImageFile() throws IOException{
         @SuppressLint("SimpleDateFormat") String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        LOG.d(LOG_TAG, "createImageFile at" + timeStamp);
         String imageFileName = "img_"+timeStamp+"_";
         File storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
         return File.createTempFile(imageFileName,".jpg",storageDir);
