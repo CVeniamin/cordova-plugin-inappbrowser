@@ -861,13 +861,15 @@ public class InAppBrowser extends CordovaPlugin {
                         }
 
                         mUMA = filePathCallback;
-                        /*try {
+                        try {
                             Intent intent = fileChooserParams.createIntent();
-                            cordova.startActivityForResult(InAppBrowser.this, chooserIntent, FCR);
+                            cordova.startActivityForResult(InAppBrowser.this, intent, FCR);
                         } catch (Exception e) {
                             // TODO: when open file chooser failed
-                        }*/
-                        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                            mUMA.onReceiveValue(null);
+                            mUMA = null;
+                        }
+                        /*Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                         if(takePictureIntent.resolveActivity(context.getPackageManager()) != null){
                             File photoFile = null;
                             try{
@@ -885,7 +887,7 @@ public class InAppBrowser extends CordovaPlugin {
                         }
                         Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
                         contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
-                        contentSelectionIntent.setType("image/*");
+                        contentSelectionIntent.setType("image*//*");
                         Intent[] intentArray;
                         if(takePictureIntent != null){
                             intentArray = new Intent[]{takePictureIntent};
@@ -898,7 +900,7 @@ public class InAppBrowser extends CordovaPlugin {
                         chooserIntent.putExtra(Intent.EXTRA_TITLE, "Add image from");
                         chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
 
-                        cordova.startActivityForResult(InAppBrowser.this, chooserIntent, FCR);
+                        cordova.startActivityForResult(InAppBrowser.this, chooserIntent, FCR);*/
                         return true;
                     }
 
@@ -1003,7 +1005,7 @@ public class InAppBrowser extends CordovaPlugin {
      */
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         // For Android >= 5.0
-        if(Build.VERSION.SDK_INT >= 21){
+        /*if(Build.VERSION.SDK_INT >= 21){
             Uri[] results = null;
             //Check if response is positive
             if(resultCode == Activity.RESULT_OK){
@@ -1023,6 +1025,7 @@ public class InAppBrowser extends CordovaPlugin {
                         }
                     }
                 }
+
                 if(requestCode != FCR || mUMA == null) {
                     super.onActivityResult(requestCode, resultCode, intent);
                     return;
@@ -1030,6 +1033,19 @@ public class InAppBrowser extends CordovaPlugin {
             }
             mUMA.onReceiveValue(results);
             mUMA = null;
+        }*/
+        if(Build.VERSION.SDK_INT >= 21){
+            //Check if response is positive
+            if(resultCode == Activity.RESULT_OK){
+                LOG.d(LOG_TAG, "onActivityResult (For Android >= 5.0)");
+                // If RequestCode or Callback is Invalid
+                if(requestCode != FCR || mUMA == null) {
+                    super.onActivityResult(requestCode, resultCode, intent);
+                    return;
+                }
+                mUMA.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent));
+                mUMA = null;
+            }
         }
         else { // For Android < 5.0
             if(requestCode == FCR){
