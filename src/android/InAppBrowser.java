@@ -126,12 +126,7 @@ public class InAppBrowser extends CordovaPlugin {
     private boolean shouldPauseInAppBrowser = false;
     private boolean useWideViewPort = true;
 
-    private String mCameraPhotoPath = null;
     private long photoSize = 0;
-    private ValueCallback<Uri> mUploadCallback;
-    private ValueCallback<Uri[]> mUploadCallbackLollipop;
-    private final static int FILECHOOSER_REQUESTCODE = 1;
-    private final static int FILECHOOSER_REQUESTCODE_LOLLIPOP = 2;
     private long size = 0;
 
     private String mCM;
@@ -856,7 +851,7 @@ public class InAppBrowser extends CordovaPlugin {
                             ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA}, 1);
                         }
 
-			if(mUMA != null){
+                        if(mUMA != null){
                             mUMA.onReceiveValue(null);
                         }
 
@@ -897,14 +892,16 @@ public class InAppBrowser extends CordovaPlugin {
                     }
 
                     //For Android 4.1+
-		     public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType, String capture){
-			mUM = uploadMsg;
-			Intent i = new Intent(Intent.ACTION_GET_CONTENT);
-			i.addCategory(Intent.CATEGORY_OPENABLE);
-			i.setType("*/*");
-			MainActivity.this.startActivityForResult(Intent.createChooser(i, "File Chooser"), MainActivity.FCR);
-            	     }
+                    public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType, String capture){
+                        LOG.d(LOG_TAG, "File Chooser 4.1+");
+                        mUM = uploadMsg;
+                        Intent content = new Intent(Intent.ACTION_GET_CONTENT);
+                        content.addCategory(Intent.CATEGORY_OPENABLE);
+                        content.setType("*/*");
 
+                        // run startActivityForResult
+                        cordova.startActivityForResult(InAppBrowser.this, Intent.createChooser(content, "Select File"), FCR);
+            	     }
                 });
 
                 if (clearAllCache) {
@@ -1036,9 +1033,7 @@ public class InAppBrowser extends CordovaPlugin {
         String imageFileName = "img_"+timeStamp+"_";
         File storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
         return File.createTempFile(imageFileName,".jpg",storageDir);
-    }	
-	
-	
+    }
 
     /**
      * The webview client receives notifications about appView
