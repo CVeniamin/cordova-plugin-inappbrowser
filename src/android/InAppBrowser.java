@@ -810,6 +810,9 @@ public class InAppBrowser extends CordovaPlugin {
                 settings.setJavaScriptEnabled(true);
                 settings.setJavaScriptCanOpenWindowsAutomatically(true);
                 settings.setAllowFileAccess(true);
+                settings.setLoadsImagesAutomatically(true);
+                settings.setAllowFileAccessFromFileURLs(true);
+                settings.setAllowUniversalAccessFromFileURLs(true);
                 settings.setBuiltInZoomControls(showZoomControls);
                 settings.setPluginState(android.webkit.WebSettings.PluginState.ON);
 
@@ -882,7 +885,7 @@ public class InAppBrowser extends CordovaPlugin {
                         }
                         Intent contentSelectionIntent = new Intent(Intent.ACTION_GET_CONTENT);
                         contentSelectionIntent.addCategory(Intent.CATEGORY_OPENABLE);
-                        contentSelectionIntent.setType("image*//*");
+                        contentSelectionIntent.setType("image/*");
                         Intent[] intentArray;
                         if(takePictureIntent != null){
                             intentArray = new Intent[]{takePictureIntent};
@@ -1001,17 +1004,32 @@ public class InAppBrowser extends CordovaPlugin {
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         // For Android >= 5.0
         if(Build.VERSION.SDK_INT >= 21){
+            Uri[] results = null;
             //Check if response is positive
             if(resultCode == Activity.RESULT_OK){
-                LOG.d(LOG_TAG, "onActivityResult (For Android >= 5.0)");
-                // If RequestCode or Callback is Invalid
+                if(requestCode == FCR){
+                    if(null == mUMA){
+                        return;
+                    }
+                    if(intent == null || intent.getData() == null){
+                        //Capture Photo if no image available
+                        if(mCM != null){
+                            results = new Uri[]{Uri.parse(mCM)};
+                        }
+                    }else{
+                        String dataString = intent.getDataString();
+                        if(dataString != null){
+                            results = new Uri[]{Uri.parse(dataString)};
+                        }
+                    }
+                }
                 if(requestCode != FCR || mUMA == null) {
                     super.onActivityResult(requestCode, resultCode, intent);
                     return;
                 }
-                mUMA.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent));
-                mUMA = null;
             }
+            mUMA.onReceiveValue(results);
+            mUMA = null;
         }
         else { // For Android < 5.0
             if(requestCode == FCR){
