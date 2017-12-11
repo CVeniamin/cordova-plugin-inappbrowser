@@ -1022,7 +1022,7 @@ public class InAppBrowser extends CordovaPlugin {
         else {
             if(requestCode == FCR){
                 if(null == mUM) return;
-                Uri result = intent == null || resultCode != RESULT_OK ? null : intent.getData();
+                Uri result = intent == null || resultCode != Activity.RESULT_OK ? null : intent.getData();
                 mUM.onReceiveValue(result);
                 mUM = null;
             }
