@@ -816,6 +816,9 @@ public class InAppBrowser extends CordovaPlugin {
                 settings.setBuiltInZoomControls(showZoomControls);
                 settings.setPluginState(android.webkit.WebSettings.PluginState.ON);
 
+                settings.setAppCacheEnabled(true);
+                settings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
+
                 if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1) {
                     settings.setMediaPlaybackRequiresUserGesture(mediaPlaybackRequiresUserGesture);
                 }
@@ -842,7 +845,7 @@ public class InAppBrowser extends CordovaPlugin {
 
                 inAppWebView.setWebChromeClient(new InAppChromeClient(thatWebView) {
                     
-		    // For Android 5.0+
+		            // For Android 5.0+
                     public boolean onShowFileChooser(
                             WebView webView, ValueCallback<Uri[]> filePathCallback,
                             WebChromeClient.FileChooserParams fileChooserParams){
@@ -911,8 +914,6 @@ public class InAppBrowser extends CordovaPlugin {
                         Intent content = new Intent(Intent.ACTION_GET_CONTENT);
                         content.addCategory(Intent.CATEGORY_OPENABLE);
                         content.setType("image/*");
-
-                        // run startActivityForResult
                         cordova.startActivityForResult(InAppBrowser.this, Intent.createChooser(content, "Select File"), FCR);
             	     }
                 });
