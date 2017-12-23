@@ -870,7 +870,7 @@ public class InAppBrowser extends CordovaPlugin {
                             Intent intent = fileChooserParams.createIntent();
                             cordova.startActivityForResult(InAppBrowser.this, intent, FCR);
                         } catch (Exception e) {
-                            // handle error when open file chooser failed
+                            // handle error when open file chooser fails
                             mUMA.onReceiveValue(null);
                             mUMA = null;
                         }
@@ -904,7 +904,7 @@ public class InAppBrowser extends CordovaPlugin {
                         }
 
                         Intent chooserIntent = new Intent(Intent.ACTION_CHOOSER);
-                        chooserIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true);
+                        //chooserIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true);
                         chooserIntent.putExtra(Intent.EXTRA_INTENT, contentSelectionIntent);
                         chooserIntent.putExtra(Intent.EXTRA_TITLE, "Add image from");
                         chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
@@ -949,17 +949,6 @@ public class InAppBrowser extends CordovaPlugin {
                         // On select image call onActivityResult method of activity
                         cordova.startActivityForResult(InAppBrowser.this, chooserIntent, FCR);
                     }
-
-                    /*
-                    //For Android 4.1+
-                    public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType, String capture){
-                        LOG.d(LOG_TAG, "File Chooser 4.1+");
-                        mUM = uploadMsg;
-                        Intent content = new Intent(Intent.ACTION_GET_CONTENT);
-                        content.addCategory(Intent.CATEGORY_OPENABLE);
-                        content.setType("image*//*");
-                        cordova.startActivityForResult(InAppBrowser.this, Intent.createChooser(content, "Select File"), FCR);
-            	     }*/
                 });
 
                 if (clearAllCache) {
@@ -1060,34 +1049,27 @@ public class InAppBrowser extends CordovaPlugin {
             Uri[] results = null;
             //Check if response is positive
             if(resultCode == Activity.RESULT_OK){
-                if(requestCode == FCR){
-
-                    if(null == mUMA){
-                        return;
+                if(intent == null){
+                    //Capture Photo if no image available
+                    if(mCM != null){
+                        results = new Uri[]{Uri.parse(mCM)};
                     }
-
-                    if(intent == null){
-                        //Capture Photo if no image available
-                        if(mCM != null){
-                            results = new Uri[]{Uri.parse(mCM)};
-                        }
-                    }else{
-                        String dataString = intent.getDataString();
-                        if(dataString != null){
-                            results = new Uri[]{Uri.parse(dataString)};
-                        }
+                }else{
+                    String dataString = intent.getDataString();
+                    if(dataString != null){
+                        results = new Uri[]{Uri.parse(dataString)};
                     }
                 }
-                mUMA.onReceiveValue(results);
-                mUMA = null;
             }
+            mUMA.onReceiveValue(results);
+            mUMA = null;
         }else if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {
             if (requestCode != FCR || mUM == null) {
                 super.onActivityResult(requestCode, resultCode, intent);
                 return;
             }
             if (requestCode == FCR) {
-                if (null == this.mUM) {
+                if (null == mUM) {
                     return;
                 }
                 Uri result = null;
