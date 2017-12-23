@@ -33,6 +33,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.text.InputType;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -1060,6 +1061,7 @@ public class InAppBrowser extends CordovaPlugin {
             //Check if response is positive
             if(resultCode == Activity.RESULT_OK){
                 if(requestCode == FCR){
+
                     if(null == mUMA){
                         return;
                     }
@@ -1097,7 +1099,7 @@ public class InAppBrowser extends CordovaPlugin {
                         result = intent == null ? mCapturedImageURI : intent.getData();
                     }
                 } catch (Exception e) {
-                    LOG.e(LOG_TAG, e);
+                    LOG.e(LOG_TAG, e.toString());
                 }
 
                 mUM.onReceiveValue(result);
