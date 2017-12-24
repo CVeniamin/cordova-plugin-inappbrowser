@@ -300,7 +300,7 @@ public class InAppBrowser extends CordovaPlugin {
             this.callbackContext.sendPluginResult(pluginResult);
         }
 		else if (action.equals("goToSettings")) {
-            final Activity activity = this.cordova.getActivity();
+            final Activity activity = InAppBrowser.this;
             if(dontKeepActivitiesEnabled(activity)){
                 this.cordova.getActivity().runOnUiThread(new Runnable() {
                     @Override
@@ -320,7 +320,11 @@ public class InAppBrowser extends CordovaPlugin {
         new AlertDialog.Builder(activity)
         .setTitle("Developer Options Detected!")
         .setMessage("In order for GTribe to work properly, on your device, please uncheck the \"Don't keep activities\" option.")
-        .setNegativeButton(android.R.string.no, null)
+        .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener(){
+            public void onClick(DialogInterface dialog, int whichButton){
+                dialog.cancel();
+            });
+        })
         .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface arg0, int arg1) {
                 Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS);
@@ -664,7 +668,7 @@ public class InAppBrowser extends CordovaPlugin {
                 // CB-6702 InAppBrowser hangs when opening more than one instance
                 if (dialog != null) {
                     dialog.dismiss();
-                };
+                }
 
                 // Let's create the main dialog
                 dialog = new InAppBrowserDialog(cordova.getActivity(), android.R.style.Theme_NoTitleBar);
@@ -904,11 +908,12 @@ public class InAppBrowser extends CordovaPlugin {
                         }
 
                         Intent chooserIntent = new Intent(Intent.ACTION_CHOOSER);
-                        //chooserIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true);
+                        chooserIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true);
                         chooserIntent.putExtra(Intent.EXTRA_INTENT, contentSelectionIntent);
-                        chooserIntent.putExtra(Intent.EXTRA_TITLE, "Add image from");
-                        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
+                        //chooserIntent.putExtra(Intent.EXTRA_TITLE, "Add image from");
+                        //chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentArray);
 
+                        cordova.setActivityResultCallback(InAppBrowser.this);
                         cordova.startActivityForResult(InAppBrowser.this, chooserIntent, FCR);
                         return true;
                     }
