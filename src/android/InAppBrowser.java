@@ -320,10 +320,10 @@ public class InAppBrowser extends CordovaPlugin {
         new AlertDialog.Builder(activity)
         .setTitle("Developer Options Detected!")
         .setMessage("In order for GTribe to work properly, on your device, please uncheck the \"Don't keep activities\" option.")
-        .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener(){
-            public void onClick(DialogInterface dialog, int whichButton){
+        .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
                 dialog.cancel();
-            });
+            }
         })
         .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface arg0, int arg1) {
