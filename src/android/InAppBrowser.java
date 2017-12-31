@@ -819,6 +819,9 @@ public class InAppBrowser extends CordovaPlugin {
                     inAppWebView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
                 }
 
+                inAppWebView.setVerticalScrollBarEnabled(false);
+                inAppWebView.setBackgroundColor(android.graphics.Color.BLACK);
+
                 settings.setJavaScriptEnabled(true);
                 settings.setJavaScriptCanOpenWindowsAutomatically(true);
                 settings.setAllowFileAccess(true);
@@ -827,9 +830,6 @@ public class InAppBrowser extends CordovaPlugin {
                 settings.setAllowUniversalAccessFromFileURLs(true);
                 settings.setBuiltInZoomControls(showZoomControls);
                 settings.setPluginState(android.webkit.WebSettings.PluginState.ON);
-
-                settings.setVerticalScrollBarEnabled(false);
-                settings.setBackgroundColor(android.graphics.Color.BLACK);
 
                 settings.setAppCacheEnabled(true);
                 settings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
