@@ -143,6 +143,9 @@ public class InAppBrowser extends CordovaPlugin {
     private final static int FILECHOOSER_REQUESTCODE = 1;
     private final static int FILECHOOSER_REQUESTCODE_LOLLIPOP = 2;
 
+    private final int MY_PERMISSIONS_RECORD_AUDIO = 111;
+    private final int MY_PERMISSIONS_MODIFY_AUDIO = 112;
+
     /**
      * Executes the request and returns PluginResult.
      *
@@ -822,6 +825,10 @@ public class InAppBrowser extends CordovaPlugin {
                 inAppWebView.setVerticalScrollBarEnabled(false);
                 inAppWebView.setBackgroundColor(android.graphics.Color.BLACK);
 
+                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    inAppWebView.setWebContentsDebuggingEnabled(true);
+                }
+
                 settings.setJavaScriptEnabled(true);
                 settings.setJavaScriptCanOpenWindowsAutomatically(true);
                 settings.setAllowFileAccess(true);
@@ -860,9 +867,29 @@ public class InAppBrowser extends CordovaPlugin {
 
                 inAppWebView.setWebChromeClient(new InAppChromeClient(thatWebView) {
 
+
+
                     @Override
-                    public void onPermissionRequest(PermissionRequest request){
-                        request.grant(request.getResources());
+                    public void onPermissionRequest(final PermissionRequest request) {
+                        Log.d(TAG, "onPermissionRequest");
+
+                        cordova.getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                requestAudioPermissions(request);
+/*
+                                if (ContextCompat.checkSelfPermission(cordova.getActivity(),
+                                        Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+
+                                    ActivityCompat.requestPermissions(cordova.getActivity(),
+                                            new String[]{Manifest.permission.RECORD_AUDIO, Manifest.permission.MODIFY_AUDIO_SETTINGS},
+                                            REQUEST_MICROPHONE);
+
+                                }
+                                request.grant(request.getResources());
+*/
+                            }
+                        });
                     }
 
 		            // For Android 5.0+
@@ -991,6 +1018,79 @@ public class InAppBrowser extends CordovaPlugin {
             }
         }
     }
+
+
+    private void requestAudioPermissions(final PermissionRequest request) {
+
+        if (ContextCompat.checkSelfPermission(cordova.getActivity(),
+                Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            //When permission is not granted by user, show them message why this permission is needed.
+            if (ActivityCompat.shouldShowRequestPermissionRationale(cordova.getActivity(),
+                    Manifest.permission.RECORD_AUDIO)) {
+
+                //Give user option to still opt-in the permissions
+                ActivityCompat.requestPermissions(cordova.getActivity(),
+                        new String[]{Manifest.permission.RECORD_AUDIO},
+                        MY_PERMISSIONS_RECORD_AUDIO);
+
+            } else {
+                // Show user dialog to grant permission to record audio
+                ActivityCompat.requestPermissions(cordova.getActivity(),
+                        new String[]{Manifest.permission.RECORD_AUDIO},
+                        MY_PERMISSIONS_RECORD_AUDIO);
+            }
+        }
+        if (ContextCompat.checkSelfPermission(cordova.getActivity(),
+                Manifest.permission.MODIFY_AUDIO_SETTINGS)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            //When permission is not granted by user, show them message why this permission is needed.
+            if (ActivityCompat.shouldShowRequestPermissionRationale(cordova.getActivity(),
+                    Manifest.permission.MODIFY_AUDIO_SETTINGS)) {
+
+                //Give user option to still opt-in the permissions
+                ActivityCompat.requestPermissions(cordova.getActivity(),
+                        new String[]{Manifest.permission.MODIFY_AUDIO_SETTINGS},
+                        MY_PERMISSIONS_MODIFY_AUDIO);
+
+            } else {
+                // Show user dialog to grant permission to record audio
+                ActivityCompat.requestPermissions(cordova.getActivity(),
+                        new String[]{Manifest.permission.MODIFY_AUDIO_SETTINGS},
+                        MY_PERMISSIONS_MODIFY_AUDIO);
+            }
+        }
+        //If permission is granted, then go ahead recording audio
+        else if (ContextCompat.checkSelfPermission(cordova.getActivity(),
+                Manifest.permission.RECORD_AUDIO)
+                == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(cordova.getActivity(),
+                Manifest.permission.MODIFY_AUDIO_SETTINGS)
+                == PackageManager.PERMISSION_GRANTED) {
+                request.grant(request.getResources());
+        }
+    }
+
+    //Handling callback
+    /*@Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_RECORD_AUDIO: {
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // permission was granted, yay!
+
+                } else {
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+
+                }
+                return;
+            }
+        }
+    }*/
 
     /**
      * Receive File Data from File Chooser
