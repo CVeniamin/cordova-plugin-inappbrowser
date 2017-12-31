@@ -1034,11 +1034,10 @@ public class InAppBrowser extends CordovaPlugin {
                 != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(cordova.getActivity(),
                 Manifest.permission.MODIFY_AUDIO_SETTINGS)
                 != PackageManager.PERMISSION_GRANTED || ActivityCompat.shouldShowRequestPermissionRationale(cordova.getActivity(),
-                Manifest.permission.CAMERA || ActivityCompat.shouldShowRequestPermissionRationale(cordova.getActivity(),
-                        Manifest.permission_group.MICROPHONE))) {
+                Manifest.permission.CAMERA)) {
 
             _permissionRequest = request;
-            String[] permissions = new String[]{Manifest.permission.RECORD_AUDIO,Manifest.permission.MODIFY_AUDIO_SETTINGS, Manifest.permission.CAMERA, Manifest.permission_group.MICROPHONE};
+            String[] permissions = new String[]{Manifest.permission.RECORD_AUDIO,Manifest.permission.MODIFY_AUDIO_SETTINGS, Manifest.permission.CAMERA};
             ActivityCompat.requestPermissions(cordova.getActivity(),
                     permissions,
                     MY_PERMISSIONS_RECORD_AUDIO);
@@ -1068,8 +1067,6 @@ public class InAppBrowser extends CordovaPlugin {
                 Manifest.permission.MODIFY_AUDIO_SETTINGS)
                 == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(cordova.getActivity(),
                 Manifest.permission.CAMERA)
-                == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(cordova.getActivity(),
-                Manifest.permission_group.MICROPHONE)
                 == PackageManager.PERMISSION_GRANTED) {
                 request.grant(request.getResources());
         }
