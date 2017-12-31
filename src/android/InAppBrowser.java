@@ -867,27 +867,13 @@ public class InAppBrowser extends CordovaPlugin {
 
                 inAppWebView.setWebChromeClient(new InAppChromeClient(thatWebView) {
 
-
-
                     @Override
                     public void onPermissionRequest(final PermissionRequest request) {
-                        Log.d(TAG, "onPermissionRequest");
-
                         cordova.getActivity().runOnUiThread(new Runnable() {
+
                             @Override
                             public void run() {
                                 requestAudioPermissions(request);
-/*
-                                if (ContextCompat.checkSelfPermission(cordova.getActivity(),
-                                        Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-
-                                    ActivityCompat.requestPermissions(cordova.getActivity(),
-                                            new String[]{Manifest.permission.RECORD_AUDIO, Manifest.permission.MODIFY_AUDIO_SETTINGS},
-                                            REQUEST_MICROPHONE);
-
-                                }
-                                request.grant(request.getResources());
-*/
                             }
                         });
                     }
