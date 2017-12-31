@@ -146,7 +146,7 @@ public class InAppBrowser extends CordovaPlugin {
     private final int MY_PERMISSIONS_RECORD_AUDIO = 111;
     private final int MY_PERMISSIONS_MODIFY_AUDIO = 112;
 
-    private final PermissionRequest _permissionRequest;
+    private PermissionRequest _permissionRequest;
     /**
      * Executes the request and returns PluginResult.
      *
