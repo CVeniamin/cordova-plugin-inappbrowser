@@ -889,15 +889,15 @@ public class InAppBrowser extends CordovaPlugin {
                                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                                     // permission was granted, yay!
                                     _permissionRequest.grant(_permissionRequest.getResources());
-                                    _permissionRequest = null;
                                 } else {
                                     // permission denied, boo! Disable the
                                     // functionality that depends on this permission.
                                     _permissionRequest.deny();
                                 }
-                                return;
+                                _permissionRequest = null;
                             }
                         }
+                    }
 
 		            // For Android 5.0+
                     public boolean onShowFileChooser (WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams)
