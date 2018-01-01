@@ -840,7 +840,7 @@ public class InAppBrowser extends CordovaPlugin {
                 settings.setPluginState(android.webkit.WebSettings.PluginState.ON);
 
                 settings.setAppCacheEnabled(true);
-                settings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
+                settings.setCacheMode(WebSettings.LOAD_DEFAULT);
 
                 if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1) {
                     settings.setMediaPlaybackRequiresUserGesture(mediaPlaybackRequiresUserGesture);
@@ -1005,7 +1005,6 @@ public class InAppBrowser extends CordovaPlugin {
             }
         }
     }
-
 
     private void requestAudioPermissions(final PermissionRequest request) {
 
