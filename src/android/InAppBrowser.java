@@ -291,7 +291,9 @@ public class InAppBrowser extends CordovaPlugin {
             this.cordova.getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    dialog.show();
+                    if(dialog != null){
+                        dialog.show();
+                    }
                 }
             });
             PluginResult pluginResult = new PluginResult(PluginResult.Status.OK);
@@ -302,7 +304,9 @@ public class InAppBrowser extends CordovaPlugin {
             this.cordova.getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    dialog.hide();
+                    if(dialog != null){
+                        dialog.hide();
+                    }
                 }
             });
             PluginResult pluginResult = new PluginResult(PluginResult.Status.OK);
@@ -331,16 +335,25 @@ public class InAppBrowser extends CordovaPlugin {
         .setTitle("Developer Options Detected!")
         .setMessage("In order for GTribe to work properly, on your device, please uncheck the \"Don't keep activities\" option.")
         .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int whichButton) {
-                dialog.cancel();
+            public void onClick(DialogInterface negativeDialog, int whichButton) {
+                if(negativeDialog != null){
+                    negativeDialog.dismiss();
+                    negativeDialog == null;
+                }
             }
         })
         .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface arg0, int arg1) {
+            public void onClick(DialogInterface positiveDialog, int arg1) {
                 Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-                activity.startActivity(intent);
-                activity.finish();
+                if(activity != null){
+                    activity.startActivity(intent);
+                    activity.finish();
+                }
+                if(positiveDialog != null){
+                    positiveDialog.dismiss();
+                    positiveDialog == null;
+                }
             }
         }).create().show();
     }
