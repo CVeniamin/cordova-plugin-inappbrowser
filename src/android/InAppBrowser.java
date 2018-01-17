@@ -338,7 +338,7 @@ public class InAppBrowser extends CordovaPlugin {
             public void onClick(DialogInterface negativeDialog, int whichButton) {
                 if(negativeDialog != null){
                     negativeDialog.dismiss();
-                    negativeDialog == null;
+                    negativeDialog = null;
                 }
             }
         })
@@ -352,7 +352,7 @@ public class InAppBrowser extends CordovaPlugin {
                 }
                 if(positiveDialog != null){
                     positiveDialog.dismiss();
-                    positiveDialog == null;
+                    positiveDialog = null;
                 }
             }
         }).create().show();
