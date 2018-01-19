@@ -458,15 +458,19 @@
 
 - (void)webViewDidFinishLoad:(UIWebView*)theWebView
 {
-    if (self.callbackId != nil) {
-        // TODO: It would be more useful to return the URL the page is actually on (e.g. if it's been redirected).
-        NSString* url = [self.inAppBrowserViewController.currentURL absoluteString];
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
-                                                      messageAsDictionary:@{@"type":@"loadstop", @"url":url}];
-        [pluginResult setKeepCallback:[NSNumber numberWithBool:YES]];
+	if (webview.isLoading)
+           return;
+   	else {
+          if (self.callbackId != nil) {
+			// TODO: It would be more useful to return the URL the page is actually on (e.g. if it's been redirected).
+			NSString* url = [self.inAppBrowserViewController.currentURL absoluteString];
+			CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
+														  messageAsDictionary:@{@"type":@"loadstop", @"url":url}];
+			[pluginResult setKeepCallback:[NSNumber numberWithBool:YES]];
 
-        [self.commandDelegate sendPluginResult:pluginResult callbackId:self.callbackId];
-    }
+			[self.commandDelegate sendPluginResult:pluginResult callbackId:self.callbackId];
+		}
+   }
 }
 
 - (void)webView:(UIWebView*)theWebView didFailLoadWithError:(NSError*)error
