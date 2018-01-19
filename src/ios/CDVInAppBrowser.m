@@ -458,7 +458,7 @@
 
 - (void)webViewDidFinishLoad:(UIWebView*)theWebView
 {
-	if (webview.isLoading)
+	if (theWebView.isLoading)
            return;
    	else {
           if (self.callbackId != nil) {
