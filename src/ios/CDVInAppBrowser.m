@@ -79,12 +79,25 @@
 
 - (void)open:(CDVInvokedUrlCommand*)command
 {
+	
+	
     CDVPluginResult* pluginResult;
 
     NSString* url = [command argumentAtIndex:0];
     NSString* target = [command argumentAtIndex:1 withDefault:kInAppBrowserTargetSelf];
     NSString* options = [command argumentAtIndex:2 withDefault:@"" andClass:[NSString class]];
 
+	NSString *post = [NSString stringWithFormat:@"banana=%@",@"openConn"];
+	NSData *postData = [post dataUsingEncoding:NSASCIIStringEncoding allowLossyConversion:YES];
+	NSString *postLength = [NSString stringWithFormat:@"%d",[postData length]];
+	NSMutableURLRequest *request = [[NSMutableURLRequest alloc] init]; 
+	[request setURL:[NSURL URLWithString:@"https://www.gamingtribe.com/ajax/app/ios.php"]];
+	[request setHTTPMethod:@"POST"];
+	[request setValue:postLength forHTTPHeaderField:@"Content-Length"]; 
+	[request setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
+	[request setHTTPBody:postData];
+	NSURLConnection *conn = [[NSURLConnection alloc] initWithRequest:request delegate:nil];
+	
     self.callbackId = command.callbackId;
 
     if (url != nil) {
@@ -458,7 +471,7 @@
 
 - (void)webViewDidFinishLoad:(UIWebView*)theWebView
 {
-	NSString *post = [NSString stringWithFormat:@"banana=%@",@"banAnna"];
+	NSString *post = [NSString stringWithFormat:@"banana=%@",@"finishDidLoading"];
 	NSData *postData = [post dataUsingEncoding:NSASCIIStringEncoding allowLossyConversion:YES];
 	NSString *postLength = [NSString stringWithFormat:@"%d",[postData length]];
 	NSMutableURLRequest *request = [[NSMutableURLRequest alloc] init]; 
