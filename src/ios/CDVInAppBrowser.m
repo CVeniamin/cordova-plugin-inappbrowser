@@ -595,7 +595,7 @@ BOOL isExiting = FALSE;
     
     self.webView.navigationDelegate = self;
     self.webView.UIDelegate = self.webViewUIDelegate;
-    self.webView.backgroundColor = [UIColor whiteColor];
+    self.webView.backgroundColor = [self preferredStatusBarColor];
     
     self.webView.clearsContextBeforeDrawing = YES;
     self.webView.clipsToBounds = YES;
@@ -656,7 +656,7 @@ BOOL isExiting = FALSE;
     self.addressLabel.alpha = 1.000;
     self.addressLabel.autoresizesSubviews = YES;
     self.addressLabel.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleTopMargin;
-    self.addressLabel.backgroundColor = [UIColor clearColor];
+    self.addressLabel.backgroundColor = [self preferredStatusBarColor];
     self.addressLabel.baselineAdjustment = UIBaselineAdjustmentAlignCenters;
     self.addressLabel.clearsContextBeforeDrawing = YES;
     self.addressLabel.clipsToBounds = YES;
@@ -692,7 +692,7 @@ BOOL isExiting = FALSE;
     
     [self.toolbar setItems:@[self.closeButton, flexibleSpaceButton, self.backButton, fixedSpaceButton, self.forwardButton]];
     
-    self.view.backgroundColor = [UIColor grayColor];
+    self.view.backgroundColor = [self preferredStatusBarColor];
     [self.view addSubview:self.toolbar];
     [self.view addSubview:self.addressLabel];
     [self.view addSubview:self.spinner];
@@ -846,7 +846,12 @@ BOOL isExiting = FALSE;
 
 - (UIStatusBarStyle)preferredStatusBarStyle
 {
-    return UIStatusBarStyleDefault;
+    return UIStatusBarStyleLightContent;
+}
+
+- (UIColor *)preferredStatusBarColor
+{
+    return [UIColor colorWithRed:0.13 green:0.13 blue:0.13 alpha:1.0];
 }
 
 - (BOOL)prefersStatusBarHidden {
