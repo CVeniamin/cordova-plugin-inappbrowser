@@ -20,12 +20,7 @@
 #import <Cordova/CDVPlugin.h>
 #import <Cordova/CDVInvokedUrlCommand.h>
 #import <Cordova/CDVScreenOrientationDelegate.h>
-
-#ifdef __CORDOVA_4_0_0
-    #import <Cordova/CDVUIWebViewDelegate.h>
-#else
-    #import <Cordova/CDVWebViewDelegate.h>
-#endif
+#import "CDVInAppBrowserUIDelegate.h"
 
 @class CDVInAppBrowserViewController;
 
@@ -68,28 +63,23 @@
 
 @end
 
-@interface CDVInAppBrowserViewController : UIViewController <UIWebViewDelegate, CDVScreenOrientationDelegate>{
+@interface CDVInAppBrowserViewController : UIViewController <CDVScreenOrientationDelegate,WKNavigationDelegate,WKUIDelegate,WKScriptMessageHandler>{
     @private
     NSString* _userAgent;
     NSString* _prevUserAgent;
     NSInteger _userAgentLockToken;
     CDVInAppBrowserOptions *_browserOptions;
-    
-#ifdef __CORDOVA_4_0_0
-    CDVUIWebViewDelegate* _webViewDelegate;
-#else
-    CDVWebViewDelegate* _webViewDelegate;
-#endif
-    
 }
 
-@property (nonatomic, strong) IBOutlet UIWebView* webView;
+@property (nonatomic, strong) IBOutlet WKWebView* webView;
+@property (nonatomic, strong) IBOutlet WKWebViewConfiguration* configuration;
 @property (nonatomic, strong) IBOutlet UIBarButtonItem* closeButton;
 @property (nonatomic, strong) IBOutlet UILabel* addressLabel;
 @property (nonatomic, strong) IBOutlet UIBarButtonItem* backButton;
 @property (nonatomic, strong) IBOutlet UIBarButtonItem* forwardButton;
 @property (nonatomic, strong) IBOutlet UIActivityIndicatorView* spinner;
 @property (nonatomic, strong) IBOutlet UIToolbar* toolbar;
+@property (nonatomic, strong) IBOutlet CDVInAppBrowserUIDelegate* webViewUIDelegate;
 
 @property (nonatomic, weak) id <CDVScreenOrientationDelegate> orientationDelegate;
 @property (nonatomic, weak) CDVInAppBrowser* navigationDelegate;
@@ -110,4 +100,3 @@
 @property (nonatomic, weak) id <CDVScreenOrientationDelegate> orientationDelegate;
 
 @end
-
