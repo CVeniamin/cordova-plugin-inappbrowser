@@ -595,9 +595,13 @@ BOOL isExiting = FALSE;
     self.webView.navigationDelegate = self;
     self.webView.UIDelegate = self.webViewUIDelegate;
 	
-				// avoid the white flash while opening the app
-				[self.webView setOpaque:NO];
-				self.webView.backgroundColor = [UIColor clearColor];
+	// avoid the white flash while opening the app
+	[self.webView setOpaque:NO];
+	self.webView.backgroundColor = [UIColor clearColor];
+	
+	// don't show scrollbars
+	self.webView.scrollView.showsHorizontalScrollIndicator = NO;
+  	self.webView.scrollView.showsVerticalScrollIndicator = NO;
 	
     self.webView.clearsContextBeforeDrawing = YES;
     self.webView.clipsToBounds = YES;
