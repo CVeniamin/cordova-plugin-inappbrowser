@@ -115,7 +115,7 @@
 
     <!-- ios -->
     <platform name="ios">
-        <js-module src="www/inappbrowser.js" name="inappbrowser">
+		<js-module src="www/inappbrowser.js" name="inappbrowser">
             <clobbers target="cordova.InAppBrowser.open" />
             <clobbers target="window.open" />
         </js-module>
@@ -126,9 +126,11 @@
         </config-file>
 
         <header-file src="src/ios/CDVInAppBrowser.h" />
-	    <source-file src="src/ios/CDVInAppBrowser.m" />
+        <source-file src="src/ios/CDVInAppBrowser.m" />
+        <header-file src="src/ios/CDVInAppBrowserUIDelegate.h" />
+        <source-file src="src/ios/CDVInAppBrowserUIDelegate.m" />
 
-	    <framework src="CoreGraphics.framework" />
+        <framework src="CoreGraphics.framework" />
     </platform>
 
     <!-- osx -->
