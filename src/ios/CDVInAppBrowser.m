@@ -203,6 +203,9 @@
         }
     }
     
+	// don't show scrollbars
+  	self.inAppBrowserViewController.webView.scrollView.showsHorizontalScrollIndicator = NO;
+  	self.inAppBrowserViewController.webView.scrollView.showsVerticalScrollIndicator = NO;
     
     [self.inAppBrowserViewController navigateTo:url];
     [self show:nil withNoAnimate:browserOptions.hidden];
@@ -596,12 +599,8 @@ BOOL isExiting = FALSE;
     self.webView.UIDelegate = self.webViewUIDelegate;
 	
 	// avoid the white flash while opening the app
-	[self.webView setOpaque:NO];
+	self.webView.opaque = NO;
 	self.webView.backgroundColor = [UIColor clearColor];
-	
-	// don't show scrollbars
-	self.webView.scrollView.showsHorizontalScrollIndicator = NO;
-  	self.webView.scrollView.showsVerticalScrollIndicator = NO;
 	
     self.webView.clearsContextBeforeDrawing = YES;
     self.webView.clipsToBounds = YES;
