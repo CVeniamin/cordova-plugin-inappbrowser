@@ -592,16 +592,17 @@ BOOL isExiting = FALSE;
     [self.view addSubview:self.webView];
     [self.view sendSubviewToBack:self.webView];
     
-    
     self.webView.navigationDelegate = self;
     self.webView.UIDelegate = self.webViewUIDelegate;
-    self.webView.backgroundColor = [self preferredStatusBarColor];
-    
+	
+				// avoid the white flash while opening the app
+				[self.webView setOpaque:NO];
+				self.webView.backgroundColor = [UIColor clearColor];
+	
     self.webView.clearsContextBeforeDrawing = YES;
     self.webView.clipsToBounds = YES;
     self.webView.contentMode = UIViewContentModeScaleToFill;
     self.webView.multipleTouchEnabled = YES;
-    self.webView.opaque = YES;
     self.webView.userInteractionEnabled = YES;
     self.automaticallyAdjustsScrollViewInsets = YES ;
     [self.webView setAutoresizingMask:UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth];
