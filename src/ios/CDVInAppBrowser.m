@@ -204,8 +204,8 @@
     }
     
 	// don't show scrollbars
-  	self.inAppBrowserViewController.webView.scrollView.showsHorizontalScrollIndicator = NO;
-  	self.inAppBrowserViewController.webView.scrollView.showsVerticalScrollIndicator = NO;
+	//self.inAppBrowserViewController.webView.scrollView.showsHorizontalScrollIndicator = NO;
+	//self.inAppBrowserViewController.webView.scrollView.showsVerticalScrollIndicator = NO;
     
     [self.inAppBrowserViewController navigateTo:url];
     [self show:nil withNoAnimate:browserOptions.hidden];
@@ -600,7 +600,7 @@ BOOL isExiting = FALSE;
 	
 	// avoid the white flash while opening the app
 	self.webView.opaque = NO;
-	self.webView.backgroundColor = [UIColor clearColor];
+	self.webView.backgroundColor = [self preferredStatusBarColor];
 	
     self.webView.clearsContextBeforeDrawing = YES;
     self.webView.clipsToBounds = YES;
