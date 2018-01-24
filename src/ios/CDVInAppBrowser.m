@@ -587,8 +587,18 @@ BOOL isExiting = FALSE;
     WKWebViewConfiguration* configuration = [[WKWebViewConfiguration alloc] init];
     configuration.userContentController = userContentController;
     configuration.processPool = [[CDVWKProcessPoolFactory sharedFactory] sharedProcessPool];
+	
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000
+    if(@available(iOS 10.0, *)) {
+        configuration.mediaTypesRequiringUserActionForPlayback = WKAudiovisualMediaTypeNone;
+    }else{
+        configuration.mediaPlaybackRequiresUserAction = _browserOptions.mediaplaybackrequiresuseraction ? YES : NO;
+    }
+#else
+    configuration.mediaPlaybackRequiresUserAction = _browserOptions.mediaplaybackrequiresuseraction ? YES : NO;
+#endif
+	
     [configuration.userContentController addScriptMessageHandler:self name:IAB_BRIDGE_NAME];
-    
     
     self.webView = [[WKWebView alloc] initWithFrame:webViewBounds configuration:configuration];
     
