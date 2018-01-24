@@ -256,7 +256,7 @@
             UIViewController *tmpController = [[UIViewController alloc] init];
             
             [tmpWindow setRootViewController:tmpController];
-            [tmpWindow setWindowLevel:UIWindowLevelNormal];
+            [tmpWindow setWindowLevel:UIWindowLevelNormal + 1];
             
             if(!initHidden || osVersion < 11){
             [tmpWindow makeKeyAndVisible];
