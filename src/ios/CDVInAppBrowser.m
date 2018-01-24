@@ -600,7 +600,7 @@ BOOL isExiting = FALSE;
 	
 	// avoid the white flash while opening the app
 	self.webView.opaque = NO;
-	self.webView.backgroundColor = [self preferredStatusBarColor];
+	self.webView.backgroundColor = [UIColor clearColor];
 	
     self.webView.clearsContextBeforeDrawing = YES;
     self.webView.clipsToBounds = YES;
