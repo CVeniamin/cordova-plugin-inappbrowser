@@ -888,7 +888,7 @@ BOOL isExiting = FALSE;
     }
 
     if (![hexString hasPrefix:@"#"] || [hexString length] < 7) {
-        return;
+		[self preferredStatusBarColor];
     }
 	
     unsigned int rgbValue = 0;
