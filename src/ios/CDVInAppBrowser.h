@@ -62,6 +62,8 @@
 @property (nonatomic, assign) NSString* statusbarcolor;
 @property (nonatomic, assign) NSString* statusbarstyle;
 
+@property (nonatomic, assign) BOOL horizontalscrollindicator;
+@property (nonatomic, assign) BOOL verticalscrollindicator;
 
 + (CDVInAppBrowserOptions*)parseOptions:(NSString*)options;
 
