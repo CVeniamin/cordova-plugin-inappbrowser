@@ -36,6 +36,9 @@
 #define    LOCATIONBAR_HEIGHT 21.0
 #define    FOOTER_HEIGHT ((TOOLBAR_HEIGHT) + (LOCATIONBAR_HEIGHT))
 
+#define    kInAppBrowserStatusBarStyle @"default"
+#define    kInAppBrowserStatusBarColor @"#222222"
+
 #pragma mark CDVInAppBrowser
 
 @interface CDVInAppBrowser () {
@@ -670,7 +673,11 @@ BOOL isExiting = FALSE;
     self.addressLabel.alpha = 1.000;
     self.addressLabel.autoresizesSubviews = YES;
     self.addressLabel.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleTopMargin;
-    self.addressLabel.backgroundColor = [self preferredStatusBarColor];
+	if(_browserOptions.statusbarcolor){
+		self.addressLabel.backgroundColor = [self backgroundColorByHexString:_browserOptions.statusbarcolor];	
+	} else {
+	    self.addressLabel.backgroundColor = [self preferredStatusBarColor];
+	}
     self.addressLabel.baselineAdjustment = UIBaselineAdjustmentAlignCenters;
     self.addressLabel.clearsContextBeforeDrawing = YES;
     self.addressLabel.clipsToBounds = YES;
@@ -706,7 +713,11 @@ BOOL isExiting = FALSE;
     
     [self.toolbar setItems:@[self.closeButton, flexibleSpaceButton, self.backButton, fixedSpaceButton, self.forwardButton]];
     
-    self.view.backgroundColor = [self preferredStatusBarColor];
+	if(_browserOptions.statusbarcolor){
+		self.view.backgroundColor = [self backgroundColorByHexString:_browserOptions.statusbarcolor];	
+	}else {
+		self.view.backgroundColor = [self preferredStatusBarColor];
+	}
     [self.view addSubview:self.toolbar];
     [self.view addSubview:self.addressLabel];
     [self.view addSubview:self.spinner];
@@ -868,6 +879,45 @@ BOOL isExiting = FALSE;
     return [UIColor colorWithRed:0.13 green:0.13 blue:0.13 alpha:1.0];
 }
 
+- (void) backgroundColorByHexString:(NSString*)hexString
+{
+	if (!([hexString isKindOfClass:[NSString class]])) {
+        hexString = @"#000000";
+    }
+
+    if (![hexString hasPrefix:@"#"] || [hexString length] < 7) {
+        return;
+    }
+	
+    unsigned int rgbValue = 0;
+    NSScanner* scanner = [NSScanner scannerWithString:hexString];
+    [scanner setScanLocation:1];
+    [scanner scanHexInt:&rgbValue];
+
+	return [UIColor colorWithRed:((rgbValue & 0xFF0000) >> 16)/255.0 green:((rgbValue & 0xFF00) >> 8)/255.0 blue:(rgbValue & 0xFF)/255.0 alpha:1.0];
+}
+
+
+- (UIStatusBarStyle) setStatusBarStyle
+{
+    // default, lightContent, blackTranslucent, blackOpaque
+	if(!_browserOptions.statusbarstyle){
+		return;
+	}
+	
+    NSString* lcStatusBarStyle = [_browserOptions.statusbarstyle lowercaseString];
+
+    if ([lcStatusBarStyle isEqualToString:@"default"]) {
+		return UIStatusBarStyleDefault;
+    } else if ([lcStatusBarStyle isEqualToString:@"lightcontent"]) {
+		return UIStatusBarStyleLightContent;
+    } else if ([lcStatusBarStyle isEqualToString:@"blacktranslucent"]) {
+		return UIStatusBarStyleBlackTranslucent;
+    } else if ([lcStatusBarStyle isEqualToString:@"blackopaque"]) {
+		return UIStatusBarStyleBlackOpaque;
+    }
+}
+
 - (BOOL)prefersStatusBarHidden {
     return NO;
 }
@@ -924,7 +974,7 @@ BOOL isExiting = FALSE;
         viewBounds.origin.y = STATUSBAR_HEIGHT;
         viewBounds.size.height = viewBounds.size.height - STATUSBAR_HEIGHT;
         self.webView.frame = viewBounds;
-        [[UIApplication sharedApplication] setStatusBarStyle:[self preferredStatusBarStyle]];
+        [[UIApplication sharedApplication] setStatusBarStyle:[self setStatusBarStyle]];
     }
     [self rePositionViews];
     
@@ -1096,6 +1146,9 @@ BOOL isExiting = FALSE;
         self.suppressesincrementalrendering = NO;
         self.hidden = NO;
         self.disallowoverscroll = NO;
+		
+		self.statusbarcolor = kInAppBrowserStatusBarColor;
+		self.statusbarstyle = kInAppBrowserStatusBarStyle;
     }
     
     return self;
