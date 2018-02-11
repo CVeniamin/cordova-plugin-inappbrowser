@@ -59,8 +59,8 @@
 @property (nonatomic, assign) BOOL hidden;
 @property (nonatomic, assign) BOOL disallowoverscroll;
 
-@property (nonatomic, copy) NSString* statusbarcolor;
-@property (nonatomic, copy) NSString* statusbarstyle;
+@property (nonatomic, assign) NSString* statusbarcolor;
+@property (nonatomic, assign) NSString* statusbarstyle;
 
 
 + (CDVInAppBrowserOptions*)parseOptions:(NSString*)options;
