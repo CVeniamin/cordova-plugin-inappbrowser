@@ -205,12 +205,13 @@
             }
         }
     }
-    if (browserOptions.horizontalscrollindicator) {
+	
+    /*if (browserOptions.horizontalscrollindicator) {
     	self.inAppBrowserViewController.webView.scrollView.showsHorizontalScrollIndicator = browserOptions.horizontalscrollindicator ? YES : NO;
     }
 	if(browserOptions.verticalscrollindicator){
 		self.inAppBrowserViewController.webView.scrollView.showsVerticalScrollIndicator = browserOptions.verticalscrollindicator ? YES : NO;
-	}
+	}*/
 
     [self.inAppBrowserViewController navigateTo:url];
     [self show:nil withNoAnimate:browserOptions.hidden];
