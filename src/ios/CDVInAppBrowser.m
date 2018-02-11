@@ -681,6 +681,8 @@ BOOL isExiting = FALSE;
 	} else {
 		self.addressLabel.backgroundColor = [self preferredStatusBarColor];
 	}
+	//self.addressLabel.backgroundColor = [self preferredStatusBarColor];
+	
     self.addressLabel.baselineAdjustment = UIBaselineAdjustmentAlignCenters;
     self.addressLabel.clearsContextBeforeDrawing = YES;
     self.addressLabel.clipsToBounds = YES;
@@ -721,6 +723,8 @@ BOOL isExiting = FALSE;
 	} else {
 		self.view.backgroundColor = [self preferredStatusBarColor];
 	}
+	
+	//self.view.backgroundColor = [self preferredStatusBarColor];
     [self.view addSubview:self.toolbar];
     [self.view addSubview:self.addressLabel];
     [self.view addSubview:self.spinner];
@@ -901,7 +905,7 @@ BOOL isExiting = FALSE;
 }
 
 
-- (UIStatusBarStyle) setStatusBarStyle
+- (UIStatusBarStyle) setStatusBarStyleMethod
 {
     // default, lightContent, blackTranslucent, blackOpaque
 	if(_browserOptions.statusbarstyle == nil){
@@ -973,7 +977,7 @@ BOOL isExiting = FALSE;
         viewBounds.origin.y = STATUSBAR_HEIGHT;
         viewBounds.size.height = viewBounds.size.height - STATUSBAR_HEIGHT;
         self.webView.frame = viewBounds;
-        [[UIApplication sharedApplication] setStatusBarStyle:[self setStatusBarStyle]];
+        [[UIApplication sharedApplication] setStatusBarStyle:  [self preferredStatusBarStyle]];
     }
     [self rePositionViews];
     
@@ -1145,7 +1149,7 @@ BOOL isExiting = FALSE;
         self.suppressesincrementalrendering = NO;
         self.hidden = NO;
         self.disallowoverscroll = NO;
-		
+
 		self.statusbarcolor = kInAppBrowserStatusBarColor;
 		self.statusbarstyle = kInAppBrowserStatusBarStyle;
     }
