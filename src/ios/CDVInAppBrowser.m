@@ -881,7 +881,7 @@ BOOL isExiting = FALSE;
     return [UIColor colorWithRed:0.13 green:0.13 blue:0.13 alpha:1.0];
 }
 
-- (void) backgroundColorByHexString:(NSString*)hexString
+- (UIColor *) backgroundColorByHexString:(NSString*)hexString
 {
 	if (!([hexString isKindOfClass:[NSString class]])) {
         hexString = @"#000000";
@@ -904,7 +904,7 @@ BOOL isExiting = FALSE;
 {
     // default, lightContent, blackTranslucent, blackOpaque
 	if(!_browserOptions.statusbarstyle){
-		return;
+		return UIStatusBarStyleDefault;
 	}
 	
     NSString* lcStatusBarStyle = [_browserOptions.statusbarstyle lowercaseString];
@@ -913,10 +913,6 @@ BOOL isExiting = FALSE;
 		return UIStatusBarStyleDefault;
     } else if ([lcStatusBarStyle isEqualToString:@"lightcontent"]) {
 		return UIStatusBarStyleLightContent;
-    } else if ([lcStatusBarStyle isEqualToString:@"blacktranslucent"]) {
-		return UIStatusBarStyleBlackTranslucent;
-    } else if ([lcStatusBarStyle isEqualToString:@"blackopaque"]) {
-		return UIStatusBarStyleBlackOpaque;
     }
 }
 
