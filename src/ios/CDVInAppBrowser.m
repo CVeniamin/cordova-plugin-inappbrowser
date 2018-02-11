@@ -676,10 +676,10 @@ BOOL isExiting = FALSE;
     self.addressLabel.alpha = 1.000;
     self.addressLabel.autoresizesSubviews = YES;
     self.addressLabel.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleTopMargin;
-	if(_browserOptions.statusbarcolor){
+	if(_browserOptions.statusbarcolor != nil){
 		self.addressLabel.backgroundColor = [self backgroundColorByHexString:_browserOptions.statusbarcolor];	
 	} else {
-	    self.addressLabel.backgroundColor = [self preferredStatusBarColor];
+		self.addressLabel.backgroundColor = [self preferredStatusBarColor];
 	}
     self.addressLabel.baselineAdjustment = UIBaselineAdjustmentAlignCenters;
     self.addressLabel.clearsContextBeforeDrawing = YES;
@@ -716,9 +716,9 @@ BOOL isExiting = FALSE;
     
     [self.toolbar setItems:@[self.closeButton, flexibleSpaceButton, self.backButton, fixedSpaceButton, self.forwardButton]];
     
-	if(_browserOptions.statusbarcolor){
+	if(_browserOptions.statusbarcolor != nil){
 		self.view.backgroundColor = [self backgroundColorByHexString:_browserOptions.statusbarcolor];	
-	}else {
+	} else {
 		self.view.backgroundColor = [self preferredStatusBarColor];
 	}
     [self.view addSubview:self.toolbar];
@@ -904,7 +904,7 @@ BOOL isExiting = FALSE;
 - (UIStatusBarStyle) setStatusBarStyle
 {
     // default, lightContent, blackTranslucent, blackOpaque
-	if(!_browserOptions.statusbarstyle){
+	if(_browserOptions.statusbarstyle == nil){
 		return UIStatusBarStyleDefault;
 	}
 	
