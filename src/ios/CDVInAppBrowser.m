@@ -206,12 +206,8 @@
         }
     }
 	
-    /*if (browserOptions.horizontalscrollindicator) {
-    	self.inAppBrowserViewController.webView.scrollView.showsHorizontalScrollIndicator = browserOptions.horizontalscrollindicator ? YES : NO;
-    }
-	if(browserOptions.verticalscrollindicator){
-		self.inAppBrowserViewController.webView.scrollView.showsVerticalScrollIndicator = browserOptions.verticalscrollindicator ? YES : NO;
-	}*/
+	self.inAppBrowserViewController.webView.scrollView.showsHorizontalScrollIndicator = browserOptions.horizontalscrollindicator ? YES : NO;
+	self.inAppBrowserViewController.webView.scrollView.showsVerticalScrollIndicator = browserOptions.verticalscrollindicator ? YES : NO;
 
     [self.inAppBrowserViewController navigateTo:url];
     [self show:nil withNoAnimate:browserOptions.hidden];
@@ -721,10 +717,10 @@ BOOL isExiting = FALSE;
 	if(_browserOptions.statusbarcolor != nil){
 		self.view.backgroundColor = [self backgroundColorByHexString:_browserOptions.statusbarcolor];	
 	} else {
-		self.view.backgroundColor = [self preferredStatusBarColor];
+		self.view.opaque = NO;
+		self.view.backgroundColor = [UIColor clearColor];
 	}
 	
-	//self.view.backgroundColor = [self preferredStatusBarColor];
     [self.view addSubview:self.toolbar];
     [self.view addSubview:self.addressLabel];
     [self.view addSubview:self.spinner];
@@ -1150,8 +1146,11 @@ BOOL isExiting = FALSE;
         self.hidden = NO;
         self.disallowoverscroll = NO;
 
-		self.statusbarcolor = kInAppBrowserStatusBarColor;
-		self.statusbarstyle = kInAppBrowserStatusBarStyle;
+	self.statusbarcolor = kInAppBrowserStatusBarColor;
+	self.statusbarstyle = kInAppBrowserStatusBarStyle;
+	    
+    	self.horizontalscrollindicator = NO;
+    	self.verticalscrollindicator = NO;
     }
     
     return self;
