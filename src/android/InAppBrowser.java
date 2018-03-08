@@ -519,16 +519,16 @@ public class InAppBrowser extends CordovaPlugin {
 						if(dialog == null || !dialog.isShowing()){
 							return;
 						}
-						
+
 						if(context instanceof Activity) {
-							if(!((Activity)context).isFinishing()) {
-							   	dialog.dismiss();
+							if(!((Activity)context).isFinishing() && dialog != null) {
+								dialog.dismiss();
 								dialog = null;
 							}
-						}else {
-                            dialog.dismiss();
-                            dialog = null;
-                        }
+						}else if(dialog.isShowing() && dialog != null) {
+							dialog.dismiss();
+							dialog = null;
+						}
                     }
                 });
                 // NB: From SDK 19: "If you call methods on WebView from any thread
