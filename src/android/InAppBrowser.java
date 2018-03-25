@@ -92,6 +92,8 @@ import java.text.SimpleDateFormat;
 import android.os.Environment;
 import android.content.ClipData;
 
+import android.widget.FrameLayout;
+import android.webkit.WebChromeClient.CustomViewCallback;
 
 @SuppressLint("SetJavaScriptEnabled")
 public class InAppBrowser extends CordovaPlugin {
@@ -147,6 +149,13 @@ public class InAppBrowser extends CordovaPlugin {
     private final int MY_PERMISSIONS_MODIFY_AUDIO = 112;
 
     private PermissionRequest _permissionRequest;
+	
+	private View mCustomView;
+    private WebChromeClient.CustomViewCallback mCustomViewCallback;
+    protected FrameLayout mFullscreenContainer;
+    private int mOriginalOrientation;
+    private int mOriginalSystemUiVisibility;
+	
     /**
      * Executes the request and returns PluginResult.
      *
@@ -880,7 +889,7 @@ public class InAppBrowser extends CordovaPlugin {
                 settings.setDomStorageEnabled(true);
 
                 inAppWebView.setWebChromeClient(new InAppChromeClient(thatWebView) {
-
+					
                     @Override
                     public void onPermissionRequest(final PermissionRequest request) {
                         cordova.getActivity().runOnUiThread(new Runnable() {
@@ -891,11 +900,48 @@ public class InAppBrowser extends CordovaPlugin {
                             }
                         });
                     }
+					
+					public Bitmap getDefaultVideoPoster()
+					{
+						Activity activity = cordova.getActivity();
+						if (activity == null) {
+							return null;
+						}
+						return BitmapFactory.decodeResource(activity.getApplicationContext().getResources(), 2130837573);
+					}
+					
+					public void onHideCustomView()
+					{
+						Activity activity = cordova.getActivity();
+						((FrameLayout)activity.getWindow().getDecorView()).removeView(mCustomView);
+						mCustomView = null;
+						activity.getWindow().getDecorView().setSystemUiVisibility(mOriginalSystemUiVisibility);
+						activity.setRequestedOrientation(mOriginalOrientation);
+						mCustomViewCallback.onCustomViewHidden();
+						mCustomViewCallback = null;
+					}
+					
+					public void onShowCustomView(View paramView, WebChromeClient.CustomViewCallback paramCustomViewCallback)
+					{
+						if (mCustomView != null)
+						{
+							onHideCustomView();
+							return;
+						}
+						Activity activity = cordova.getActivity();
+						mCustomView = paramView;
+						mOriginalSystemUiVisibility = activity.getWindow().getDecorView().getSystemUiVisibility();
+						mOriginalOrientation = activity.getRequestedOrientation();
+						mCustomViewCallback = paramCustomViewCallback;
+						((FrameLayout)activity.getWindow().getDecorView()).addView(mCustomView, new FrameLayout.LayoutParams(-1, -1));
+						activity.getWindow().getDecorView().setSystemUiVisibility(3846);
+					}
+			
 
 		            // For Android 5.0+
                     public boolean onShowFileChooser (WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams)
                     {
-                        Activity activity = cordova.getActivity();
+						Activity activity = cordova.getActivity();
                         Context context = activity.getApplicationContext();
 
                         if(Build.VERSION.SDK_INT >= 23 && (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)) {
