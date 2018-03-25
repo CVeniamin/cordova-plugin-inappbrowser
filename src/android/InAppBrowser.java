@@ -93,10 +93,11 @@ import android.os.Environment;
 import android.content.ClipData;
 
 import android.widget.FrameLayout;
-import android.widget.FrameLayout.LayoutParams;
+import android.view.ViewGroup;
 
 import android.webkit.WebChromeClient.CustomViewCallback;
 import android.graphics.BitmapFactory;
+import android.view.MotionEvent;
 
 @SuppressLint("SetJavaScriptEnabled")
 public class InAppBrowser extends CordovaPlugin {
@@ -913,7 +914,7 @@ public class InAppBrowser extends CordovaPlugin {
                             }
                         });
                     }
-
+					
 					public void onShowCustomView(View view, int requestedOrientation, WebChromeClient.CustomViewCallback callback) {
 						if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
 							if (mCustomView != null) {
@@ -966,18 +967,6 @@ public class InAppBrowser extends CordovaPlugin {
 						win.setAttributes(winParams);
 					}
 
-					private static class FullscreenHolder extends FrameLayout {
-						public FullscreenHolder(Context ctx) {
-							super(ctx);
-							setBackgroundColor(ctx.getResources().getColor(android.R.color.black));
-						}
-
-						@Override
-						public boolean onTouchEvent(MotionEvent evt) {
-							return true;
-						}
-					}
-						
 					/*public Bitmap getDefaultVideoPoster()
 					{
 						Activity activity = cordova.getActivity();
@@ -1464,4 +1453,16 @@ public class InAppBrowser extends CordovaPlugin {
             super.onReceivedHttpAuthRequest(view, handler, host, realm);
         }
     }
+	
+	private static class FullscreenHolder extends FrameLayout {
+		public FullscreenHolder(Context ctx) {
+			super(ctx);
+			setBackgroundColor(ctx.getResources().getColor(android.R.color.black));
+		}
+
+		@Override
+		public boolean onTouchEvent(MotionEvent evt) {
+			return true;
+		}
+	}
 }
