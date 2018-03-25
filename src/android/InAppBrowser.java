@@ -974,7 +974,8 @@ public class InAppBrowser extends CordovaPlugin {
 
 						@Override
 						public boolean onTouchEvent(MotionEvent evt) {
-						return true;
+							return true;
+						}
 					}
 						
 					/*public Bitmap getDefaultVideoPoster()
