@@ -94,6 +94,7 @@ import android.content.ClipData;
 
 import android.widget.FrameLayout;
 import android.webkit.WebChromeClient.CustomViewCallback;
+import android.graphics.BitmapFactory;
 
 @SuppressLint("SetJavaScriptEnabled")
 public class InAppBrowser extends CordovaPlugin {
