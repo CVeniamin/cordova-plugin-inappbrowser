@@ -897,7 +897,9 @@ public class InAppBrowser extends CordovaPlugin {
 				settings.setDatabaseEnabled(true);
 			}
 			settings.setDomStorageEnabled(true);
-
+			
+			mFullscreenContainer = (FrameLayout) findViewById(R.id.customViewContainer);
+			
 			mFullScreenWebView = new InAppChromeClient(thatWebView) {
 				Activity mActivity = cordova.getActivity();
 
