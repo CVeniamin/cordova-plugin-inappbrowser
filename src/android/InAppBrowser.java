@@ -897,23 +897,22 @@ public class InAppBrowser extends CordovaPlugin {
 				mFullScreenWebView = new InAppChromeClient(thatWebView) {
 					Activity mActivity = cordova.getActivity();
 					
-                    @Override
-                    public void onPermissionRequest(final PermissionRequest request) {
-                        cordova.getActivity().runOnUiThread(new Runnable() {
+					@Override
+					public void onPermissionRequest(final PermissionRequest request) {
+						cordova.getActivity().runOnUiThread(new Runnable() {
+							@Override
+							public void run() {
+							requestAudioPermissions(request);
+							}
+						});
+					}
 
-                            @Override
-                            public void run() {
-                                requestAudioPermissions(request);
-                            }
-                        });
-                    }
-					
 					@Override
 					public boolean onKeyDown(int keyCode, KeyEvent event) {
 						if (keyCode == KeyEvent.KEYCODE_BACK) {
 
 							if (mCustomView != null) {
-								onHideCustomView
+								onHideCustomView();
 								return true;
 							}
 
@@ -933,9 +932,8 @@ public class InAppBrowser extends CordovaPlugin {
 						}
 						return BitmapFactory.decodeResource(activity.getApplicationContext().getResources(), 2130837573);
 					}
-					
-					public void onHideCustomView()
-					{
+
+					public void onHideCustomView(){
 						super.onHideCustomView();    //To change body of overridden methods use File | Settings | File Templates.
 						if (mCustomView == null)
 							return;
@@ -950,7 +948,7 @@ public class InAppBrowser extends CordovaPlugin {
 						// Remove the custom view from its container.
 						mCustomViewCallback.onCustomViewHidden();
 						mCustomView = null;
-						
+
 						/*Activity activity = cordova.getActivity();
 						((FrameLayout)activity.getWindow().getDecorView()).removeView(mCustomView);
 						mCustomView = null;
@@ -959,9 +957,8 @@ public class InAppBrowser extends CordovaPlugin {
 						mCustomViewCallback.onCustomViewHidden();
 						mCustomViewCallback = null;*/
 					}
-					
-					public void onShowCustomView(View paramView, WebChromeClient.CustomViewCallback customViewCallback)
-					{
+
+					public void onShowCustomView(View paramView, WebChromeClient.CustomViewCallback customViewCallback) {
 						if (mCustomView != null)
 						{
 							customViewCallback.onCustomViewHidden();
@@ -972,7 +969,7 @@ public class InAppBrowser extends CordovaPlugin {
 						mFullscreenContainer.setVisibility(View.VISIBLE);
 						mFullscreenContainer.addView(paramView);
 						mCustomViewCallback = customViewCallback;
-						
+
 						/*Activity activity = cordova.getActivity();
 						mOriginalSystemUiVisibility = activity.getWindow().getDecorView().getSystemUiVisibility();
 						mOriginalOrientation = activity.getRequestedOrientation();
@@ -980,55 +977,52 @@ public class InAppBrowser extends CordovaPlugin {
 						((FrameLayout)activity.getWindow().getDecorView()).addView(mCustomView, new FrameLayout.LayoutParams(-1, -1));
 						activity.getWindow().getDecorView().setSystemUiVisibility(3846);*/
 					}
-			
+
 					// File Chooser Implemented ChromeClient
-		            // For Android 5.0+
-                    public boolean onShowFileChooser (WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams)
-                    {
+					// For Android 5.0+
+					public boolean onShowFileChooser (WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
 						Activity activity = cordova.getActivity();
-                        Context context = activity.getApplicationContext();
+						Context context = activity.getApplicationContext();
 
-                        if(Build.VERSION.SDK_INT >= 23 && (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)) {
-                            ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA}, 1);
-                        }
+						if(Build.VERSION.SDK_INT >= 23 && (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)) {
+							ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA}, 1);
+						}
 
-                        LOG.d(LOG_TAG, "File Chooser 5.0+");
-                        // If callback exists, finish it.
-                        if(mUploadCallbackLollipop != null) {
-                            mUploadCallbackLollipop.onReceiveValue(null);
-                        }
-                        mUploadCallbackLollipop = filePathCallback;
+						LOG.d(LOG_TAG, "File Chooser 5.0+");
+						// If callback exists, finish it.
+						if(mUploadCallbackLollipop != null) {
+							mUploadCallbackLollipop.onReceiveValue(null);
+						}
+						mUploadCallbackLollipop = filePathCallback;
 
-                        // Create File Chooser Intent
-                        Intent content = new Intent(Intent.ACTION_GET_CONTENT);
-                        content.addCategory(Intent.CATEGORY_OPENABLE);
-                        content.setType("image/*");
+						// Create File Chooser Intent
+						Intent content = new Intent(Intent.ACTION_GET_CONTENT);
+						content.addCategory(Intent.CATEGORY_OPENABLE);
+						content.setType("image/*");
 
-                        // Run cordova startActivityForResult
-                        cordova.startActivityForResult(InAppBrowser.this, Intent.createChooser(content, "Select File"), FILECHOOSER_REQUESTCODE_LOLLIPOP);
-                        return true;
-                    }
+						// Run cordova startActivityForResult
+						cordova.startActivityForResult(InAppBrowser.this, Intent.createChooser(content, "Select File"), FILECHOOSER_REQUESTCODE_LOLLIPOP);
+						return true;
+					}
 
-                    // For Android 4.1+
-                    public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType, String capture)
-                    {
-                        LOG.d(LOG_TAG, "File Chooser 4.1+");
-                        // Call file chooser for Android 3.0+
-                        openFileChooser(uploadMsg, acceptType);
-                    }
+						// For Android 4.1+
+					public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType, String capture){
+						LOG.d(LOG_TAG, "File Chooser 4.1+");
+						// Call file chooser for Android 3.0+
+						openFileChooser(uploadMsg, acceptType);
+					}	
 
-                    // For Android 3.0+
-                    public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType)
-                    {
-                        LOG.d(LOG_TAG, "File Chooser 3.0+");
-                        mUploadCallback = uploadMsg;
-                        Intent content = new Intent(Intent.ACTION_GET_CONTENT);
-                        content.addCategory(Intent.CATEGORY_OPENABLE);
+					// For Android 3.0+
+					public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType) {
+						LOG.d(LOG_TAG, "File Chooser 3.0+");
+						mUploadCallback = uploadMsg;
+						Intent content = new Intent(Intent.ACTION_GET_CONTENT);
+						content.addCategory(Intent.CATEGORY_OPENABLE);
 
-                        // run startActivityForResult
-                        cordova.startActivityForResult(InAppBrowser.this, Intent.createChooser(content, "Select File"), FILECHOOSER_REQUESTCODE);
-                    }
-                };
+						// run startActivityForResult
+						cordova.startActivityForResult(InAppBrowser.this, Intent.createChooser(content, "Select File"), FILECHOOSER_REQUESTCODE);
+					}
+				};
 				
                 inAppWebView.setWebChromeClient(mFullScreenWebView);
 
