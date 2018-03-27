@@ -1034,7 +1034,7 @@ public class InAppBrowser extends CordovaPlugin {
                         // run startActivityForResult
                         cordova.startActivityForResult(InAppBrowser.this, Intent.createChooser(content, "Select File"), FILECHOOSER_REQUESTCODE);
                     }
-                }
+                };
 				
                 inAppWebView.setWebChromeClient(mFullScreenWebView);
 
