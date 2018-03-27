@@ -154,20 +154,14 @@ public class InAppBrowser extends CordovaPlugin {
 
     private PermissionRequest _permissionRequest;
 	
-	/*private View mCustomView;
+	private View mCustomView;
     private WebChromeClient.CustomViewCallback mCustomViewCallback;
     protected FrameLayout mFullscreenContainer;
-    private int mOriginalOrientation;
+	
+	/*private int mOriginalOrientation;
     private int mOriginalSystemUiVisibility;*/
 	
-	private View mCustomView;
-	private WebChromeClient.CustomViewCallback mCustomViewCallback;
-	private int mOriginalOrientation;
-
-	private FrameLayout mContentView;
-	private FrameLayout mFullscreenContainer;
-
-	private static final FrameLayout.LayoutParams COVER_SCREEN_PARAMS = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+	private InAppChromeClient mFullScreenWebView;
 
     /**
      * Executes the request and returns PluginResult.
@@ -411,6 +405,28 @@ public class InAppBrowser extends CordovaPlugin {
             inAppWebView.onResume();
         }
     }
+	
+	@Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+
+            if (mCustomView != null) {
+                hideCustomView();
+                return true;
+            }
+
+            if ((mCustomView == null) && canGoBack()) {
+                goBack();
+                return true;
+            }
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+	
+	public void hideCustomView() {
+        mFullScreenWebView.onHideCustomView();
+    }
+
 
     /**
      * Called by AccelBroker when listener is to be shut down.
@@ -845,7 +861,6 @@ public class InAppBrowser extends CordovaPlugin {
                 inAppWebView = new WebView(cordova.getActivity());
                 inAppWebView.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
                 inAppWebView.setId(Integer.valueOf(6));
-                // File Chooser Implemented ChromeClient
 
                 WebViewClient client = new InAppBrowserClient(thatWebView, edittext);
                 inAppWebView.setWebViewClient(client);
@@ -900,8 +915,8 @@ public class InAppBrowser extends CordovaPlugin {
                     settings.setDatabaseEnabled(true);
                 }
                 settings.setDomStorageEnabled(true);
-
-                inAppWebView.setWebChromeClient(new InAppChromeClient(thatWebView) {
+				
+				mFullScreenWebView = new InAppChromeClient(thatWebView) {
 					Activity mActivity = cordova.getActivity();
 					
                     @Override
@@ -915,59 +930,7 @@ public class InAppBrowser extends CordovaPlugin {
                         });
                     }
 					
-					public void onShowCustomView(View view, int requestedOrientation, WebChromeClient.CustomViewCallback callback) {
-						if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
-							if (mCustomView != null) {
-								callback.onCustomViewHidden();
-								return;
-							}
-
-							mOriginalOrientation = mActivity.getRequestedOrientation();
-							FrameLayout decor = (FrameLayout) mActivity.getWindow().getDecorView();
-							mFullscreenContainer = new FullscreenHolder(mActivity);
-							mFullscreenContainer.addView(view, COVER_SCREEN_PARAMS);
-							decor.addView(mFullscreenContainer, COVER_SCREEN_PARAMS);
-							mCustomView = view;
-							setFullscreen(true);
-							mCustomViewCallback = callback;
-							mActivity.setRequestedOrientation(requestedOrientation);
-						}
-
-						super.onShowCustomView(view, requestedOrientation, callback);
-					}
-
-					public void onHideCustomView() {
-						if (mCustomView == null) {
-							return;
-						}
-
-						setFullscreen(false);
-						FrameLayout decor = (FrameLayout) mActivity.getWindow().getDecorView();
-						decor.removeView(mFullscreenContainer);
-						mFullscreenContainer = null;
-						mCustomView = null;
-						mCustomViewCallback.onCustomViewHidden();
-						mActivity.setRequestedOrientation(mOriginalOrientation);
-					}
-
-					private void setFullscreen(boolean enabled) {
-						Window win = mActivity.getWindow();
-						WindowManager.LayoutParams winParams = win.getAttributes();
-						final int bits = WindowManager.LayoutParams.FLAG_FULLSCREEN;
-						if (enabled) {
-							winParams.flags |= bits;
-						} else {
-							winParams.flags &= ~bits;
-							if (mCustomView != null) {
-								mCustomView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
-							} else {
-								mContentView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
-							}
-						}
-						win.setAttributes(winParams);
-					}
-
-					/*public Bitmap getDefaultVideoPoster()
+					public Bitmap getDefaultVideoPoster()
 					{
 						Activity activity = cordova.getActivity();
 						if (activity == null) {
@@ -978,32 +941,53 @@ public class InAppBrowser extends CordovaPlugin {
 					
 					public void onHideCustomView()
 					{
-						Activity activity = cordova.getActivity();
+						super.onHideCustomView();    //To change body of overridden methods use File | Settings | File Templates.
+						if (mCustomView == null)
+							return;
+
+						inAppWebView.setVisibility(View.VISIBLE);
+						mFullscreenContainer.setVisibility(View.GONE);
+
+						// Hide the custom view.
+						mCustomView.setVisibility(View.GONE);
+
+						// Remove the custom view from its container.
+						mCustomViewCallback.removeView(mCustomView);
+						mCustomViewCallback.onCustomViewHidden();
+
+						mCustomView = null;
+						
+						/*Activity activity = cordova.getActivity();
 						((FrameLayout)activity.getWindow().getDecorView()).removeView(mCustomView);
 						mCustomView = null;
 						activity.getWindow().getDecorView().setSystemUiVisibility(mOriginalSystemUiVisibility);
 						activity.setRequestedOrientation(mOriginalOrientation);
 						mCustomViewCallback.onCustomViewHidden();
-						mCustomViewCallback = null;
+						mCustomViewCallback = null;*/
 					}
 					
-					public void onShowCustomView(View paramView, WebChromeClient.CustomViewCallback paramCustomViewCallback)
+					public void onShowCustomView(View paramView, WebChromeClient.CustomViewCallback customViewCallback)
 					{
 						if (mCustomView != null)
 						{
-							onHideCustomView();
+							customViewCallback.onCustomViewHidden();
 							return;
 						}
-						Activity activity = cordova.getActivity();
 						mCustomView = paramView;
+						inAppWebView.setVisibility(View.GONE);
+						mFullscreenContainer.setVisibility(View.VISIBLE);
+						mFullscreenContainer.addView(paramView);
+						mCustomViewCallback = customViewCallback;
+						
+						/*Activity activity = cordova.getActivity();
 						mOriginalSystemUiVisibility = activity.getWindow().getDecorView().getSystemUiVisibility();
 						mOriginalOrientation = activity.getRequestedOrientation();
 						mCustomViewCallback = paramCustomViewCallback;
 						((FrameLayout)activity.getWindow().getDecorView()).addView(mCustomView, new FrameLayout.LayoutParams(-1, -1));
-						activity.getWindow().getDecorView().setSystemUiVisibility(3846);
-					}*/
+						activity.getWindow().getDecorView().setSystemUiVisibility(3846);*/
+					}
 			
-
+					// File Chooser Implemented ChromeClient
 		            // For Android 5.0+
                     public boolean onShowFileChooser (WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams)
                     {
@@ -1050,7 +1034,9 @@ public class InAppBrowser extends CordovaPlugin {
                         // run startActivityForResult
                         cordova.startActivityForResult(InAppBrowser.this, Intent.createChooser(content, "Select File"), FILECHOOSER_REQUESTCODE);
                     }
-                });
+                }
+				
+                inAppWebView.setWebChromeClient(mFullScreenWebView);
 
                 if (clearAllCache) {
                     CookieManager.getInstance().removeAllCookie();
@@ -1145,47 +1131,6 @@ public class InAppBrowser extends CordovaPlugin {
         else{
             request.grant(request.getResources());
         }
-
-        /*if (ContextCompat.checkSelfPermission(cordova.getActivity(),
-                Manifest.permission.RECORD_AUDIO)
-                != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(cordova.getActivity(),
-                Manifest.permission.MODIFY_AUDIO_SETTINGS)
-                != PackageManager.PERMISSION_GRANTED || ActivityCompat.shouldShowRequestPermissionRationale(cordova.getActivity(),
-                Manifest.permission.CAMERA)) {
-
-            _permissionRequest = request;
-            String[] permissions = new String[]{Manifest.permission.RECORD_AUDIO,Manifest.permission.MODIFY_AUDIO_SETTINGS, Manifest.permission.CAMERA};
-
-            cordova.requestPermissions(this, MY_PERMISSIONS_RECORD_AUDIO,permissions);
-
-            //When permission is not granted by user, show them message why this permission is needed.
-            if (ActivityCompat.shouldShowRequestPermissionRationale(cordova.getActivity(),
-                    Manifest.permission.RECORD_AUDIO) || ActivityCompat.shouldShowRequestPermissionRationale(cordova.getActivity(),
-                    Manifest.permission.MODIFY_AUDIO_SETTINGS) || ActivityCompat.shouldShowRequestPermissionRationale(cordova.getActivity(),
-                    Manifest.permission.CAMERA)) {
-
-                //Give user option to still opt-in the permissions
-                ActivityCompat.requestPermissions(cordova.getActivity(),
-                        permissions,
-                        MY_PERMISSIONS_RECORD_AUDIO);
-
-            } else {
-                // Show user dialog to grant permission to record audio
-                ActivityCompat.requestPermissions(cordova.getActivity(),
-                        permissions,
-                        MY_PERMISSIONS_RECORD_AUDIO);
-            }
-        }
-        //If permission is granted, then go ahead recording audio
-        else if (ContextCompat.checkSelfPermission(cordova.getActivity(),
-                Manifest.permission.RECORD_AUDIO)
-                == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(cordova.getActivity(),
-                Manifest.permission.MODIFY_AUDIO_SETTINGS)
-                == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(cordova.getActivity(),
-                Manifest.permission.CAMERA)
-                == PackageManager.PERMISSION_GRANTED) {
-                request.grant(request.getResources());
-        }*/
     }
 
     //Handling callback
@@ -1453,16 +1398,4 @@ public class InAppBrowser extends CordovaPlugin {
             super.onReceivedHttpAuthRequest(view, handler, host, realm);
         }
     }
-	
-	private static class FullscreenHolder extends FrameLayout {
-		public FullscreenHolder(Context ctx) {
-			super(ctx);
-			setBackgroundColor(ctx.getResources().getColor(android.R.color.black));
-		}
-
-		@Override
-		public boolean onTouchEvent(MotionEvent evt) {
-			return true;
-		}
-	}
 }
