@@ -406,28 +406,6 @@ public class InAppBrowser extends CordovaPlugin {
         }
     }
 	
-	@Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_BACK) {
-
-            if (mCustomView != null) {
-                hideCustomView();
-                return true;
-            }
-
-            if ((mCustomView == null) && canGoBack()) {
-                goBack();
-                return true;
-            }
-        }
-        return super.onKeyDown(keyCode, event);
-    }
-	
-	public void hideCustomView() {
-        mFullScreenWebView.onHideCustomView();
-    }
-
-
     /**
      * Called by AccelBroker when listener is to be shut down.
      * Stop listener.
@@ -930,6 +908,23 @@ public class InAppBrowser extends CordovaPlugin {
                         });
                     }
 					
+					@Override
+					public boolean onKeyDown(int keyCode, KeyEvent event) {
+						if (keyCode == KeyEvent.KEYCODE_BACK) {
+
+							if (mCustomView != null) {
+								onHideCustomView
+								return true;
+							}
+
+							if ((mCustomView == null) && canGoBack()) {
+								goBack();
+								return true;
+							}
+						}
+						return super.onKeyDown(keyCode, event);
+					}
+
 					public Bitmap getDefaultVideoPoster()
 					{
 						Activity activity = cordova.getActivity();
@@ -946,15 +941,14 @@ public class InAppBrowser extends CordovaPlugin {
 							return;
 
 						inAppWebView.setVisibility(View.VISIBLE);
-						mFullscreenContainer.setVisibility(View.GONE);
 
 						// Hide the custom view.
+						mFullscreenContainer.setVisibility(View.GONE);
+						mFullscreenContainer.removeView(mCustomView);
+
 						mCustomView.setVisibility(View.GONE);
-
 						// Remove the custom view from its container.
-						mCustomViewCallback.removeView(mCustomView);
 						mCustomViewCallback.onCustomViewHidden();
-
 						mCustomView = null;
 						
 						/*Activity activity = cordova.getActivity();
