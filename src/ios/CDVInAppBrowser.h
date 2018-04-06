@@ -32,6 +32,7 @@
 @property (nonatomic, copy) NSRegularExpression *callbackIdPattern;
 
 @property (readwrite, assign, nonatomic) BOOL hideFormAccessoryBar;
+@property (readwrite, assign, nonatomic) BOOL keyboardAppearanceDark;
 
 - (void)open:(CDVInvokedUrlCommand*)command;
 - (void)close:(CDVInvokedUrlCommand*)command;
@@ -39,6 +40,7 @@
 - (void)show:(CDVInvokedUrlCommand*)command;
 - (void)hide:(CDVInvokedUrlCommand*)command;
 - (void)hideFormAccessoryBar:(CDVInvokedUrlCommand*)command;
+- (void)keyboardAppearanceDark:(CDVInvokedUrlCommand*)command;
 
 @end
 
