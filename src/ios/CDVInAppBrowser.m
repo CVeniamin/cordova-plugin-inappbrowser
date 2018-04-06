@@ -21,6 +21,7 @@
 #import "CDVWKProcessPoolFactory.h"
 #import <Cordova/CDVPluginResult.h>
 #import <Cordova/CDVUserAgentUtil.h>
+#import <objc/runtime.h>
 
 #define    kInAppBrowserTargetSelf @"_self"
 #define    kInAppBrowserTargetSystem @"_system"
@@ -286,8 +287,12 @@ static IMP WKOriginalImp;
 
 #pragma mark KeyboardAppearanceDark
 
-- (void)setKeyboardAppearanceDark(BOOL)keyboardAppearanceDark
+- (void)setKeyboardAppearanceDark:(BOOL)keyboardAppearanceDark
 {
+	if (keyboardAppearanceDark == _keyboardAppearanceDark) {
+        return;
+    }
+
     if (keyboardAppearanceDark) {
         IMP darkImp = imp_implementationWithBlock(^(id _s) {
        	 	return UIKeyboardAppearanceDark;
@@ -303,6 +308,7 @@ static IMP WKOriginalImp;
 			}
 		}
     }
+	_keyboardAppearanceDark == keyboardAppearanceDark
 }
 
 - (void)show:(CDVInvokedUrlCommand*)command withNoAnimate:(BOOL)noAnimate
