@@ -307,8 +307,8 @@ static IMP WKOriginalImp;
 				class_addMethod(c, @selector(keyboardAppearance), darkImp, "l@:");
 			}
 		}
-    }
-	_keyboardAppearanceDark == keyboardAppearanceDark
+    }	
+	_keyboardAppearanceDark = keyboardAppearanceDark;
 }
 
 - (void)show:(CDVInvokedUrlCommand*)command withNoAnimate:(BOOL)noAnimate
