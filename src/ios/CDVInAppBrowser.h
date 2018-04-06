@@ -31,11 +31,14 @@
 @property (nonatomic, copy) NSString* callbackId;
 @property (nonatomic, copy) NSRegularExpression *callbackIdPattern;
 
+@property (readwrite, assign, nonatomic) BOOL hideFormAccessoryBar;
+
 - (void)open:(CDVInvokedUrlCommand*)command;
 - (void)close:(CDVInvokedUrlCommand*)command;
 - (void)injectScriptCode:(CDVInvokedUrlCommand*)command;
 - (void)show:(CDVInvokedUrlCommand*)command;
 - (void)hide:(CDVInvokedUrlCommand*)command;
+- (void)hideFormAccessoryBar:(CDVInvokedUrlCommand*)command;
 
 @end
 
