@@ -217,6 +217,94 @@
     [self show:command withNoAnimate:NO];
 }
 
+- (void)hideFormAccessoryBar:(CDVInvokedUrlCommand*)command
+{
+    if (command.arguments.count > 0) {
+        id value = [command.arguments objectAtIndex:0];
+        if (!([value isKindOfClass:[NSNumber class]])) {
+            value = [NSNumber numberWithBool:NO];
+        }
+        
+        self.hideFormAccessoryBar = [value boolValue];
+    }
+    
+    [self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:self.hideFormAccessoryBar]
+                                callbackId:command.callbackId];
+}
+
+- (void)keyboardAppearanceDark:(CDVInvokedUrlCommand*)command
+{
+	
+	if (command.arguments.count > 0) {
+        id value = [command.arguments objectAtIndex:0];
+        if (!([value isKindOfClass:[NSNumber class]])) {
+            value = [NSNumber numberWithBool:NO];
+        }
+        
+        self.keyboardAppearanceDark = [value boolValue];
+    }
+    
+	[self.commandDelegate sendPluginResult:[CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:self.keyboardAppearanceDark]
+                                callbackId:command.callbackId];
+}
+
+
+#pragma mark HideFormAccessoryBar
+
+static IMP UIOriginalImp;
+static IMP WKOriginalImp;
+
+- (void)setHideFormAccessoryBar:(BOOL)hideFormAccessoryBar
+{
+    if (hideFormAccessoryBar == _hideFormAccessoryBar) {
+        return;
+    }
+
+    NSString* UIClassString = [@[@"UI", @"Web", @"Browser", @"View"] componentsJoinedByString:@""];
+    NSString* WKClassString = [@[@"WK", @"Content", @"View"] componentsJoinedByString:@""];
+
+    Method UIMethod = class_getInstanceMethod(NSClassFromString(UIClassString), @selector(inputAccessoryView));
+    Method WKMethod = class_getInstanceMethod(NSClassFromString(WKClassString), @selector(inputAccessoryView));
+
+    if (hideFormAccessoryBar) {
+        UIOriginalImp = method_getImplementation(UIMethod);
+        WKOriginalImp = method_getImplementation(WKMethod);
+
+        IMP newImp = imp_implementationWithBlock(^(id _s) {
+            return nil;
+        });
+
+        method_setImplementation(UIMethod, newImp);
+        method_setImplementation(WKMethod, newImp);
+    } else {
+        method_setImplementation(UIMethod, UIOriginalImp);
+        method_setImplementation(WKMethod, WKOriginalImp);
+    }
+
+    _hideFormAccessoryBar = hideFormAccessoryBar;
+}
+
+#pragma mark KeyboardAppearanceDark
+
+- (void)setKeyboardAppearanceDark(BOOL)keyboardAppearanceDark
+{
+    if (keyboardAppearanceDark) {
+        IMP darkImp = imp_implementationWithBlock(^(id _s) {
+       	 	return UIKeyboardAppearanceDark;
+		});
+
+		for (NSString* classString in @[@"WKContentView", @"UITextInputTraits"]) {
+			Class c = NSClassFromString(classString);
+			Method m = class_getInstanceMethod(c, @selector(keyboardAppearance));
+			if (m != NULL) {
+				method_setImplementation(m, darkImp);
+			} else {
+				class_addMethod(c, @selector(keyboardAppearance), darkImp, "l@:");
+			}
+		}
+    }
+}
+
 - (void)show:(CDVInvokedUrlCommand*)command withNoAnimate:(BOOL)noAnimate
 {
     BOOL initHidden = NO;
@@ -1121,7 +1209,6 @@ BOOL isExiting = FALSE;
     
     return YES;
 }
-
 
 @end //CDVInAppBrowserViewController
 
