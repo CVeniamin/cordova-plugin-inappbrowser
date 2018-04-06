@@ -84,7 +84,22 @@
             } else {
                 throw new Error('insertCSS requires exactly one of code or file to be specified');
             }
-        }
+        },
+        keyboardAppearanceDark: function (keyboadDark, success) {
+            if (keyboadDark !== null && keyboadDark !== undefined){
+                exec(success, null, "InAppBrowser", "keyboardAppearanceDark", [keyboadDark]);
+            } else {
+                exec(success, null, "InAppBrowser", "keyboardAppearanceDark", []);
+            }
+        },
+        hideFormAccessoryBar: function (hide, success) {
+            if (hide !== null && hide !== undefined){
+                exec(success, null, "InAppBrowser", "hideFormAccessoryBar", [hide]);
+            } else {
+                exec(success, null, "InAppBrowser", "hideFormAccessoryBar", []);
+            }
+        },
+        
     };
 
     module.exports = function (strUrl, strWindowName, strWindowFeatures, callbacks) {
