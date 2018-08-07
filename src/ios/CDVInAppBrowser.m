@@ -127,14 +127,14 @@
 {
     CDVInAppBrowserOptions* browserOptions = [CDVInAppBrowserOptions parseOptions:options];
     
-    if (browserOptions.clearcache) {
+    /*if (browserOptions.clearcache) {
         WKWebsiteDataStore* dataStore = [WKWebsiteDataStore defaultDataStore];
         NSDate* dateFrom = [NSDate dateWithTimeIntervalSince1970:0];
         [dataStore removeDataOfTypes:[WKWebsiteDataStore allWebsiteDataTypes] modifiedSince:dateFrom completionHandler:^{
             NSLog(@"Removed all WKWebView data");
             self.inAppBrowserViewController.webView.configuration.processPool = [[WKProcessPool alloc] init]; // create new process pool to flush all data
         }];
-    }
+    }*/
     
     if (browserOptions.clearsessioncache) {
         NSLog(@"Clear session cookies not yet implemented for WKWebView");
