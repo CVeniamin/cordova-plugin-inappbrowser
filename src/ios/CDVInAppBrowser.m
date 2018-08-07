@@ -379,12 +379,12 @@ static IMP WKOriginalImp;
 
 - (void)openInCordovaWebView:(NSURL*)url withOptions:(NSString*)options
 {
-	NSURLRequest* request;
-	if (browserOptions.clearcache) {
+	NSURLRequest* request = [NSURLRequest requestWithURL:url];
+	/*if (browserOptions.clearcache) {
 		 request = [NSURLRequest requestWithURL:url cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:60.0];
 	}else{
 		request = [NSURLRequest requestWithURL:url];
-	}
+	}*/
     
 #ifdef __CORDOVA_4_0_0
     // the webview engine itself will filter for this according to <allow-navigation> policy
@@ -1031,8 +1031,14 @@ BOOL isExiting = FALSE;
 
 - (void)navigateTo:(NSURL*)url
 {
-    NSURLRequest* request = [NSURLRequest requestWithURL:url];
+    NSURLRequest* request;
     
+	if (_browserOptions.clearcache) {
+		 request = [NSURLRequest requestWithURL:url cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:60.0];
+	}else{
+		request = [NSURLRequest requestWithURL:url];
+	}
+	
     if (_userAgentLockToken != 0) {
         [self.webView loadRequest:request];
     } else {
