@@ -18,32 +18,41 @@ under the License.
 */
 package org.apache.cordova.inappbrowser;
 
-
-import android.provider.Settings;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.annotation.SuppressLint;
+import android.animation.LayoutTransition;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
-import android.provider.Browser;
-import android.content.res.Resources;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
+import android.graphics.BitmapFactory;
+
+import android.Manifest;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Parcelable;
-import android.text.InputType;
+import android.os.Environment;
+
+import android.provider.Browser;
+import android.provider.Settings;
+import android.provider.MediaStore;
+import android.R.id;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+
 import android.util.TypedValue;
-import android.view.Gravity;
+
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
-import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
+
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 import android.webkit.HttpAuthHandler;
@@ -54,9 +63,9 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.WebChromeClient.FileChooserParams;
 import android.webkit.PermissionRequest;
-import android.widget.EditText;
-import android.widget.ImageButton;
-import android.widget.ImageView;
+import android.webkit.WebChromeClient.CustomViewCallback;
+
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 
@@ -77,29 +86,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.StringTokenizer;
-
-import android.provider.MediaStore;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-
-import android.Manifest;
-import android.annotation.SuppressLint;
-import android.content.pm.PackageManager;
-import java.io.File;
-import java.io.IOException;
-import java.util.Date;
-import java.text.SimpleDateFormat;
-import android.os.Environment;
-import android.content.ClipData;
-
-import android.widget.FrameLayout;
-import android.view.ViewGroup;
-
-import android.webkit.WebChromeClient.CustomViewCallback;
-import android.graphics.BitmapFactory;
-import android.view.MotionEvent;
-
-import android.R.id;
 
 @SuppressLint("SetJavaScriptEnabled")
 public class InAppBrowser extends CordovaPlugin {
@@ -125,7 +111,8 @@ public class InAppBrowser extends CordovaPlugin {
 
 	private InAppBrowserDialog dialog;
 	private WebView inAppWebView;
-	private EditText edittext;
+	// private EditText edittext;
+	
 	private CallbackContext callbackContext;
 	private boolean showLocationBar = true;
 	private boolean showZoomControls = true;
@@ -137,33 +124,21 @@ public class InAppBrowser extends CordovaPlugin {
 	private boolean shouldPauseInAppBrowser = false;
 	private boolean useWideViewPort = true;
 
-	private long photoSize = 0;
-	private long size = 0;
-
-	private String mCM;
-	private Uri mCapturedImageURI = null;
-	private ValueCallback<Uri> mUM;
-	private ValueCallback<Uri[]> mUMA;
-	private final static int FCR=1;
-
-	private ValueCallback<Uri> mUploadCallback;
-	private ValueCallback<Uri[]> mUploadCallbackLollipop;
-	private final static int FILECHOOSER_REQUESTCODE = 1;
-	private final static int FILECHOOSER_REQUESTCODE_LOLLIPOP = 2;
+	private final static int FILECHOOSER_REQUEST_CODE = 5372;
 
 	private final int MY_PERMISSIONS_RECORD_AUDIO = 111;
 	private final int MY_PERMISSIONS_MODIFY_AUDIO = 112;
 
 	private PermissionRequest _permissionRequest;
 
-	private View mCustomView;
-	private WebChromeClient.CustomViewCallback mCustomViewCallback;
-	protected FrameLayout mFullscreenContainer;
-
-	/*private int mOriginalOrientation;
-	private int mOriginalSystemUiVisibility;*/
-
+	private FrameLayout mFullscreenContainer;
 	private InAppChromeClient mFullScreenWebView;
+
+	/** File upload callback for platform versions prior to Android 5.0 */
+	protected ValueCallback<Uri> mFileUploadCallbackFirst;
+
+	/** File upload callback for Android 5.0+ */
+	protected ValueCallback<Uri[]> mFileUploadCallbackSecond;
 
 	/**
 	* Executes the request and returns PluginResult.
@@ -345,39 +320,39 @@ public class InAppBrowser extends CordovaPlugin {
 	else {
 		return false;
 	}
-	return true;
+		return true;
 	}
 
 	private void goToSettings(final Activity activity){
-	new AlertDialog.Builder(activity)
-	.setTitle("Developer Options Detected!")
-	.setMessage("In order for GTribe to work properly, on your device, please uncheck the \"Don't keep activities\" option.")
-	.setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
-		public void onClick(DialogInterface negativeDialog, int whichButton) {
-			if(negativeDialog != null){
-				negativeDialog.dismiss();
-				negativeDialog = null;
+		new AlertDialog.Builder(activity)
+		.setTitle("Developer Options Detected!")
+		.setMessage("In order for GTribe to work properly, on your device, please uncheck the \"Don't keep activities\" option.")
+		.setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface negativeDialog, int whichButton) {
+				if(negativeDialog != null){
+					negativeDialog.dismiss();
+					negativeDialog = null;
+				}
 			}
-		}
-	})
-	.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
-		public void onClick(DialogInterface positiveDialog, int arg1) {
-			Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS);
-			intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-			if(activity != null){
-				activity.startActivity(intent);
-				activity.finish();
+		})
+		.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface positiveDialog, int arg1) {
+				Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS);
+				intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+				if(activity != null){
+					activity.startActivity(intent);
+					activity.finish();
+				}
+				if(positiveDialog != null){
+					positiveDialog.dismiss();
+					positiveDialog = null;
+				}
 			}
-			if(positiveDialog != null){
-				positiveDialog.dismiss();
-				positiveDialog = null;
-			}
-		}
-	}).create().show();
+		}).create().show();
 	}
 
 	private boolean dontKeepActivitiesEnabled(Activity activity) {
-	return Settings.System.getInt(activity.getApplicationContext().getContentResolver(), Settings.Global.ALWAYS_FINISH_ACTIVITIES, 0) == 1;
+		return Settings.System.getInt(activity.getApplicationContext().getContentResolver(), Settings.Global.ALWAYS_FINISH_ACTIVITIES, 0) == 1;
 	}
 
 	/**
@@ -385,7 +360,7 @@ public class InAppBrowser extends CordovaPlugin {
 	*/
 	@Override
 	public void onReset() {
-	closeDialog();
+		closeDialog();
 	}
 
 	/**
@@ -393,9 +368,9 @@ public class InAppBrowser extends CordovaPlugin {
 	*/
 	@Override
 	public void onPause(boolean multitasking) {
-	if (shouldPauseInAppBrowser) {
-		inAppWebView.onPause();
-	}
+		if (shouldPauseInAppBrowser) {
+			inAppWebView.onPause();
+		}
 	}
 
 	/**
@@ -403,9 +378,9 @@ public class InAppBrowser extends CordovaPlugin {
 	*/
 	@Override
 	public void onResume(boolean multitasking) {
-	if (shouldPauseInAppBrowser) {
-		inAppWebView.onResume();
-	}
+		if (shouldPauseInAppBrowser) {
+			inAppWebView.onResume();
+		}
 	}
 
 	/**
@@ -413,7 +388,7 @@ public class InAppBrowser extends CordovaPlugin {
 	* Stop listener.
 	*/
 	public void onDestroy() {
-	closeDialog();
+		closeDialog();
 	}
 
 	/**
@@ -581,7 +556,7 @@ public class InAppBrowser extends CordovaPlugin {
 	public boolean canGoBack() {
 		return this.inAppWebView.canGoBack();
 	}
-
+	
 	public void hideCustomView() {
 		mFullScreenWebView.onHideCustomView();
 	}
@@ -609,15 +584,15 @@ public class InAppBrowser extends CordovaPlugin {
 	* @param url to load
 	*/
 	private void navigate(String url) {
-	InputMethodManager imm = (InputMethodManager)this.cordova.getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-	imm.hideSoftInputFromWindow(edittext.getWindowToken(), 0);
+		InputMethodManager imm = (InputMethodManager)this.cordova.getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+		imm.hideSoftInputFromWindow(this.inAppWebView.getWindowToken(), 0);
 
-	if (!url.startsWith("http") && !url.startsWith("file:")) {
-		this.inAppWebView.loadUrl("http://" + url);
-	} else {
-		this.inAppWebView.loadUrl(url);
-	}
-	this.inAppWebView.requestFocus();
+		if (!url.startsWith("http") && !url.startsWith("file:")) {
+			this.inAppWebView.loadUrl("http://" + url);
+		} else {
+			this.inAppWebView.loadUrl(url);
+		}
+		this.inAppWebView.requestFocus();
 	}
 
 
@@ -631,7 +606,7 @@ public class InAppBrowser extends CordovaPlugin {
 	}
 
 	private InAppBrowser getInAppBrowser(){
-	return this;
+		return this;
 	}
 
 	/**
@@ -641,444 +616,411 @@ public class InAppBrowser extends CordovaPlugin {
 	* @param features jsonObject
 	*/
 	public String showWebPage(final String url, HashMap<String, Boolean> features) {
-	// Determine if we should hide the location bar.
-	showLocationBar = true;
-	showZoomControls = true;
-	openWindowHidden = false;
-	mediaPlaybackRequiresUserGesture = false;
+		// Determine if we should hide the location bar.
+		showLocationBar = false;
+		showZoomControls = false;
+		openWindowHidden = false;
+		mediaPlaybackRequiresUserGesture = false;
 
-	if (features != null) {
-		Boolean show = features.get(LOCATION);
-		if (show != null) {
-			showLocationBar = show.booleanValue();
-		}
-		Boolean zoom = features.get(ZOOM);
-		if (zoom != null) {
-			showZoomControls = zoom.booleanValue();
-		}
-		Boolean hidden = features.get(HIDDEN);
-		if (hidden != null) {
-			openWindowHidden = hidden.booleanValue();
-		}
-		Boolean hardwareBack = features.get(HARDWARE_BACK_BUTTON);
-		if (hardwareBack != null) {
-			hadwareBackButton = hardwareBack.booleanValue();
-		} else {
-			hadwareBackButton = DEFAULT_HARDWARE_BACK;
-		}
-		Boolean mediaPlayback = features.get(MEDIA_PLAYBACK_REQUIRES_USER_ACTION);
-		if (mediaPlayback != null) {
-			mediaPlaybackRequiresUserGesture = mediaPlayback.booleanValue();
-		}
-		Boolean cache = features.get(CLEAR_ALL_CACHE);
-		if (cache != null) {
-			clearAllCache = cache.booleanValue();
-		} else {
-			cache = features.get(CLEAR_SESSION_CACHE);
+		if (features != null) {
+			Boolean show = features.get(LOCATION);
+			if (show != null) {
+				showLocationBar = show.booleanValue();
+			}
+			Boolean zoom = features.get(ZOOM);
+			if (zoom != null) {
+				showZoomControls = zoom.booleanValue();
+			}
+			Boolean hidden = features.get(HIDDEN);
+			if (hidden != null) {
+				openWindowHidden = hidden.booleanValue();
+			}
+			Boolean hardwareBack = features.get(HARDWARE_BACK_BUTTON);
+			if (hardwareBack != null) {
+				hadwareBackButton = hardwareBack.booleanValue();
+			} else {
+				hadwareBackButton = DEFAULT_HARDWARE_BACK;
+			}
+			Boolean mediaPlayback = features.get(MEDIA_PLAYBACK_REQUIRES_USER_ACTION);
+			if (mediaPlayback != null) {
+				mediaPlaybackRequiresUserGesture = mediaPlayback.booleanValue();
+			}
+			Boolean cache = features.get(CLEAR_ALL_CACHE);
 			if (cache != null) {
-				clearSessionCache = cache.booleanValue();
+				clearAllCache = cache.booleanValue();
+			} else {
+				cache = features.get(CLEAR_SESSION_CACHE);
+				if (cache != null) {
+					clearSessionCache = cache.booleanValue();
+				}
+			}
+			Boolean shouldPause = features.get(SHOULD_PAUSE);
+			if (shouldPause != null) {
+				shouldPauseInAppBrowser = shouldPause.booleanValue();
+			}
+			Boolean wideViewPort = features.get(USER_WIDE_VIEW_PORT);
+			if (wideViewPort != null ) {
+					useWideViewPort = wideViewPort.booleanValue();
 			}
 		}
-		Boolean shouldPause = features.get(SHOULD_PAUSE);
-		if (shouldPause != null) {
-			shouldPauseInAppBrowser = shouldPause.booleanValue();
-		}
-		Boolean wideViewPort = features.get(USER_WIDE_VIEW_PORT);
-		if (wideViewPort != null ) {
-				useWideViewPort = wideViewPort.booleanValue();
-		}
-	}
 
-	final CordovaWebView thatWebView = this.webView;
+		final CordovaWebView thatWebView = this.webView;
 
-	// Create dialog in new thread
-	Runnable runnable = new Runnable() {
-		/**
-		 * Convert our DIP units to Pixels
-		 *
-		 * @return int
-		 */
-		private int dpToPixels(int dipValue) {
-			int value = (int) TypedValue.applyDimension( TypedValue.COMPLEX_UNIT_DIP,
-														(float) dipValue,
-														cordova.getActivity().getResources().getDisplayMetrics()
-			);
+		// Create dialog in new thread
+		Runnable runnable = new Runnable() {
+			/**
+			 * Convert our DIP units to Pixels
+			 *
+			 * @return int
+			 */
+			private int dpToPixels(int dipValue) {
+				int value = (int) TypedValue.applyDimension( TypedValue.COMPLEX_UNIT_DIP,
+															(float) dipValue,
+															cordova.getActivity().getResources().getDisplayMetrics()
+				);
 
-			return value;
-		}
-
-		@SuppressLint("NewApi")
-		public void run() {
-
-			// CB-6702 InAppBrowser hangs when opening more than one instance
-			if (dialog != null) {
-				dialog.dismiss();
+				return value;
 			}
 
-			// Let's create the main dialog
-			dialog = new InAppBrowserDialog(cordova.getActivity(), android.R.style.Theme_NoTitleBar);
-			dialog.getWindow().getAttributes().windowAnimations = android.R.style.Animation_Dialog;
-			dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-			dialog.setCancelable(true);
-			dialog.setInAppBroswer(getInAppBrowser());
+			@SuppressLint("NewApi")
+			public void run() {
 
-			// Main container layout
-			LinearLayout main = new LinearLayout(cordova.getActivity());
-			main.setOrientation(LinearLayout.VERTICAL);
-
-			// Toolbar layout
-			RelativeLayout toolbar = new RelativeLayout(cordova.getActivity());
-			//Please, no more black!
-			toolbar.setBackgroundColor(android.graphics.Color.LTGRAY);
-			toolbar.setLayoutParams(new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, this.dpToPixels(44)));
-			toolbar.setPadding(this.dpToPixels(2), this.dpToPixels(2), this.dpToPixels(2), this.dpToPixels(2));
-			toolbar.setHorizontalGravity(Gravity.LEFT);
-			toolbar.setVerticalGravity(Gravity.TOP);
-
-			// Action Button Container layout
-			RelativeLayout actionButtonContainer = new RelativeLayout(cordova.getActivity());
-			actionButtonContainer.setLayoutParams(new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
-			actionButtonContainer.setHorizontalGravity(Gravity.LEFT);
-			actionButtonContainer.setVerticalGravity(Gravity.CENTER_VERTICAL);
-			actionButtonContainer.setId(Integer.valueOf(1));
-
-			// Back button
-			ImageButton back = new ImageButton(cordova.getActivity());
-			RelativeLayout.LayoutParams backLayoutParams = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);
-			backLayoutParams.addRule(RelativeLayout.ALIGN_LEFT);
-			back.setLayoutParams(backLayoutParams);
-			back.setContentDescription("Back Button");
-			back.setId(Integer.valueOf(2));
-			Resources activityRes = cordova.getActivity().getResources();
-			int backResId = activityRes.getIdentifier("ic_action_previous_item", "drawable", cordova.getActivity().getPackageName());
-			Drawable backIcon = activityRes.getDrawable(backResId);
-			if (Build.VERSION.SDK_INT >= 16)
-				back.setBackground(null);
-			else
-				back.setBackgroundDrawable(null);
-			back.setImageDrawable(backIcon);
-			back.setScaleType(ImageView.ScaleType.FIT_CENTER);
-			back.setPadding(0, this.dpToPixels(10), 0, this.dpToPixels(10));
-			if (Build.VERSION.SDK_INT >= 16)
-				back.getAdjustViewBounds();
-
-			back.setOnClickListener(new View.OnClickListener() {
-				public void onClick(View v) {
-					goBack();
+				// CB-6702 InAppBrowser hangs when opening more than one instance
+				if (dialog != null) {
+					dialog.dismiss();
 				}
-			});
+				
+				Activity activity = cordova.getActivity();
 
-			// Forward button
-			ImageButton forward = new ImageButton(cordova.getActivity());
-			RelativeLayout.LayoutParams forwardLayoutParams = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);
-			forwardLayoutParams.addRule(RelativeLayout.RIGHT_OF, 2);
-			forward.setLayoutParams(forwardLayoutParams);
-			forward.setContentDescription("Forward Button");
-			forward.setId(Integer.valueOf(3));
-			int fwdResId = activityRes.getIdentifier("ic_action_next_item", "drawable", cordova.getActivity().getPackageName());
-			Drawable fwdIcon = activityRes.getDrawable(fwdResId);
-			if (Build.VERSION.SDK_INT >= 16)
-				forward.setBackground(null);
-			else
-				forward.setBackgroundDrawable(null);
-			forward.setImageDrawable(fwdIcon);
-			forward.setScaleType(ImageView.ScaleType.FIT_CENTER);
-			forward.setPadding(0, this.dpToPixels(10), 0, this.dpToPixels(10));
-			if (Build.VERSION.SDK_INT >= 16)
-				forward.getAdjustViewBounds();
+				// Let's create the main dialog
+				dialog = new InAppBrowserDialog(activity, android.R.style.Theme_NoTitleBar);
+				dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+				dialog.setCancelable(true);
+				dialog.setInAppBroswer(getInAppBrowser());
 
-			forward.setOnClickListener(new View.OnClickListener() {
-				public void onClick(View v) {
-					goForward();
+				activity.getWindow().setFlags(
+					WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
+					WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED);
+
+				// WebView
+				inAppWebView = new WebView(activity);
+				inAppWebView.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+				inAppWebView.setId(Integer.valueOf(6));
+
+				// WebViewClient client = new InAppBrowserClient(thatWebView, edittext);
+				WebViewClient client = new InAppBrowserClient(thatWebView);
+				inAppWebView.setWebViewClient(client);
+
+				WebSettings settings = inAppWebView.getSettings();
+				if(Build.VERSION.SDK_INT >= 21){
+					settings.setMixedContentMode(0);
 				}
-			});
 
-			// Edit Text Box
-			edittext = new EditText(cordova.getActivity());
-			RelativeLayout.LayoutParams textLayoutParams = new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
-			textLayoutParams.addRule(RelativeLayout.RIGHT_OF, 1);
-			textLayoutParams.addRule(RelativeLayout.LEFT_OF, 5);
-			edittext.setLayoutParams(textLayoutParams);
-			edittext.setId(Integer.valueOf(4));
-			edittext.setSingleLine(true);
-			edittext.setText(url);
-			edittext.setInputType(InputType.TYPE_TEXT_VARIATION_URI);
-			edittext.setImeOptions(EditorInfo.IME_ACTION_GO);
-			edittext.setInputType(InputType.TYPE_NULL); // Will not except input... Makes the text NON-EDITABLE
-			edittext.setOnKeyListener(new View.OnKeyListener() {
-				public boolean onKey(View v, int keyCode, KeyEvent event) {
-					// If the event is a key-down event on the "enter" button
-					if ((event.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)) {
-					  navigate(edittext.getText().toString());
-					  return true;
+				if (Build.VERSION.SDK_INT >= 19) {
+					inAppWebView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+				} else {
+					inAppWebView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+				}
+
+				inAppWebView.setVerticalScrollBarEnabled(false);
+				inAppWebView.setBackgroundColor(android.graphics.Color.BLACK);
+
+				boolean isDebuggable = (0 != (activity.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE));
+
+				if (isDebuggable && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+					// development mode
+					inAppWebView.setWebContentsDebuggingEnabled(true);
+				} else if(!isDebuggable && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+					// release mode
+					inAppWebView.setWebContentsDebuggingEnabled(false);
+				}
+
+				/* if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+					inAppWebView.setWebContentsDebuggingEnabled(true);
+				} */
+				
+				settings.setJavaScriptEnabled(true);
+				settings.setJavaScriptCanOpenWindowsAutomatically(true);
+				settings.setAllowFileAccess(true);
+				settings.setLoadsImagesAutomatically(true);
+				settings.setAllowFileAccessFromFileURLs(true);
+				settings.setAllowUniversalAccessFromFileURLs(true);
+				settings.setBuiltInZoomControls(showZoomControls);
+				settings.setPluginState(android.webkit.WebSettings.PluginState.ON);
+				settings.setAppCacheEnabled(true);
+				settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+
+				if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1) {
+					settings.setMediaPlaybackRequiresUserGesture(mediaPlaybackRequiresUserGesture);
+				}
+
+				String overrideUserAgent = preferences.getString("OverrideUserAgent", null);
+				String appendUserAgent = preferences.getString("AppendUserAgent", null);
+
+				if (overrideUserAgent != null) {
+					settings.setUserAgentString(overrideUserAgent);
+				}
+				if (appendUserAgent != null) {
+					settings.setUserAgentString(settings.getUserAgentString() + appendUserAgent);
+				}
+
+				//Toggle whether this is enabled or not!
+				Bundle appSettings = activity.getIntent().getExtras();
+				boolean enableDatabase = appSettings == null ? true : appSettings.getBoolean("InAppBrowserStorageEnabled", true);
+				if (enableDatabase) {
+					String databasePath = activity.getApplicationContext().getDir("inAppBrowserDB", Context.MODE_PRIVATE).getPath();
+					settings.setDatabasePath(databasePath);
+					settings.setDatabaseEnabled(true);
+				}
+				settings.setDomStorageEnabled(true);
+				
+				if (clearAllCache) {
+					CookieManager.getInstance().removeAllCookie();
+				} else if (clearSessionCache) {
+					CookieManager.getInstance().removeSessionCookie();
+				}
+
+				inAppWebView.loadUrl(url);
+				inAppWebView.setId(Integer.valueOf(6));
+				inAppWebView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+				inAppWebView.getSettings().setLoadWithOverviewMode(true);
+				inAppWebView.getSettings().setUseWideViewPort(useWideViewPort);
+				inAppWebView.requestFocus();
+				inAppWebView.requestFocusFromTouch();
+
+				// Main container layout
+				LinearLayout main = new LinearLayout(activity);
+
+				LayoutTransition lt = new LayoutTransition();
+				lt.disableTransitionType(LayoutTransition.DISAPPEARING);
+				lt.disableTransitionType(LayoutTransition.CHANGE_DISAPPEARING);
+				lt.disableTransitionType(LayoutTransition.CHANGE_APPEARING);
+				lt.disableTransitionType(LayoutTransition.CHANGING);
+
+				lt.enableTransitionType(LayoutTransition.APPEARING);
+
+				lt.setStartDelay(LayoutTransition.APPEARING, 0);
+				lt.setDuration(LayoutTransition.APPEARING, 1000);
+
+				main.setLayoutTransition(lt);
+				main.setOrientation(LinearLayout.VERTICAL);
+				
+				mFullscreenContainer = new FrameLayout(activity);
+				FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+				mFullscreenContainer.setLayoutParams(params);
+
+				//hide this view until it goes into fullscreen
+				mFullscreenContainer.setVisibility(View.GONE);
+				mFullscreenContainer.setId(Integer.valueOf(10));
+				main.addView(mFullscreenContainer);
+				
+				mFullScreenWebView = new InAppChromeClient(thatWebView) {
+
+					View fullScreenView = null;
+					CustomViewCallback mCustomViewCallback = null;
+					Window window = activity.getWindow();
+
+					@Override
+					public void onPermissionRequest(final PermissionRequest request) {
+						activity.runOnUiThread(new Runnable() {
+							@Override
+							public void run() {
+								requestAudioPermissions(request);
+							}
+						});
 					}
-					return false;
-				}
-			});
 
-			// Close/Done button
-			ImageButton close = new ImageButton(cordova.getActivity());
-			RelativeLayout.LayoutParams closeLayoutParams = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);
-			closeLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-			close.setLayoutParams(closeLayoutParams);
-			close.setContentDescription("Close Button");
-			close.setId(Integer.valueOf(5));
-			int closeResId = activityRes.getIdentifier("ic_action_remove", "drawable", cordova.getActivity().getPackageName());
-			Drawable closeIcon = activityRes.getDrawable(closeResId);
-			if (Build.VERSION.SDK_INT >= 16)
-				close.setBackground(null);
-			else
-				close.setBackgroundDrawable(null);
-			close.setImageDrawable(closeIcon);
-			close.setScaleType(ImageView.ScaleType.FIT_CENTER);
-			back.setPadding(0, this.dpToPixels(10), 0, this.dpToPixels(10));
-			if (Build.VERSION.SDK_INT >= 16)
-				close.getAdjustViewBounds();
+					@Override
+					public void onProgressChanged(WebView view, int newProgress) {
+						super.onProgressChanged(view, newProgress);
+					}
 
-			close.setOnClickListener(new View.OnClickListener() {
-				public void onClick(View v) {
-					closeDialog();
-				}
-			});
-
-			// WebView
-			inAppWebView = new WebView(cordova.getActivity());
-			inAppWebView.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-			inAppWebView.setId(Integer.valueOf(6));
-
-			WebViewClient client = new InAppBrowserClient(thatWebView, edittext);
-			inAppWebView.setWebViewClient(client);
-			WebSettings settings = inAppWebView.getSettings();
-			if(Build.VERSION.SDK_INT >= 21){
-				settings.setMixedContentMode(0);
-			}
-
-			if (Build.VERSION.SDK_INT >= 19) {
-				inAppWebView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-			}
-
-			inAppWebView.setVerticalScrollBarEnabled(false);
-			inAppWebView.setBackgroundColor(android.graphics.Color.BLACK);
-
-			if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-				inAppWebView.setWebContentsDebuggingEnabled(true);
-			}
-
-			settings.setJavaScriptEnabled(true);
-			settings.setJavaScriptCanOpenWindowsAutomatically(true);
-			settings.setAllowFileAccess(true);
-			settings.setLoadsImagesAutomatically(true);
-			settings.setAllowFileAccessFromFileURLs(true);
-			settings.setAllowUniversalAccessFromFileURLs(true);
-			settings.setBuiltInZoomControls(showZoomControls);
-			settings.setPluginState(android.webkit.WebSettings.PluginState.ON);
-
-			settings.setAppCacheEnabled(true);
-			settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-
-			if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR1) {
-				settings.setMediaPlaybackRequiresUserGesture(mediaPlaybackRequiresUserGesture);
-			}
-
-			String overrideUserAgent = preferences.getString("OverrideUserAgent", null);
-			String appendUserAgent = preferences.getString("AppendUserAgent", null);
-
-			if (overrideUserAgent != null) {
-				settings.setUserAgentString(overrideUserAgent);
-			}
-			if (appendUserAgent != null) {
-				settings.setUserAgentString(settings.getUserAgentString() + appendUserAgent);
-			}
-
-			//Toggle whether this is enabled or not!
-			Bundle appSettings = cordova.getActivity().getIntent().getExtras();
-			boolean enableDatabase = appSettings == null ? true : appSettings.getBoolean("InAppBrowserStorageEnabled", true);
-			if (enableDatabase) {
-				String databasePath = cordova.getActivity().getApplicationContext().getDir("inAppBrowserDB", Context.MODE_PRIVATE).getPath();
-				settings.setDatabasePath(databasePath);
-				settings.setDatabaseEnabled(true);
-			}
-			settings.setDomStorageEnabled(true);
-			
-			mFullscreenContainer = (FrameLayout) findViewById(R.id.customViewContainer);
-			
-			mFullScreenWebView = new InAppChromeClient(thatWebView) {
-				Activity mActivity = cordova.getActivity();
-
-				@Override
-				public void onPermissionRequest(final PermissionRequest request) {
-					cordova.getActivity().runOnUiThread(new Runnable() {
-						@Override
-						public void run() {
-							requestAudioPermissions(request);
+					@Override
+					public void onShowCustomView(View view, final CustomViewCallback callback) {
+						
+						if (fullScreenView != null) {
+							callback.onCustomViewHidden();
+							return;
 						}
-					});
-				}
+						
+						if (!(view instanceof FrameLayout)) {
+							LOG.d(LOG_TAG, "custom view wasn't a FrameLayout");
+							return;
+						}
 
-				public Bitmap getDefaultVideoPoster()
-				{
-					Activity activity = cordova.getActivity();
-					if (activity == null) {
-						return null;
-					}
-					return BitmapFactory.decodeResource(activity.getApplicationContext().getResources(), 2130837573);
-				}
+						fullScreenView = view;
 
-				public void onHideCustomView(){
-					super.onHideCustomView();    //To change body of overridden methods use File | Settings | File Templates.
-					if (mCustomView == null)
-						return;
+						if (fullScreenView == null) {
+							return;
+						}
+						
+						if (Build.VERSION.SDK_INT >= 19) {
+							fullScreenView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+						} else {
+							fullScreenView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+						}
 
-					inAppWebView.setVisibility(View.VISIBLE);
+						fullScreenView.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+						mFullscreenContainer.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+						inAppWebView.setVisibility(View.GONE);
 
-					// Hide the custom view.
-					mFullscreenContainer.setVisibility(View.GONE);
-					mFullscreenContainer.removeView(mCustomView);
+						mFullscreenContainer.setVisibility(View.VISIBLE);
+						fullScreenView.setVisibility(View.VISIBLE);
+						mFullscreenContainer.addView(fullScreenView);
 
-					mCustomView.setVisibility(View.GONE);
-					// Remove the custom view from its container.
-					mCustomViewCallback.onCustomViewHidden();
-					mCustomView = null;
-					dialog.setCustomView(mCustomView);
+						mCustomViewCallback = callback;
 
-					/*Activity activity = cordova.getActivity();
-					((FrameLayout)activity.getWindow().getDecorView()).removeView(mCustomView);
-					mCustomView = null;
-					activity.getWindow().getDecorView().setSystemUiVisibility(mOriginalSystemUiVisibility);
-					activity.setRequestedOrientation(mOriginalOrientation);
-					mCustomViewCallback.onCustomViewHidden();
-					mCustomViewCallback = null;*/
-				}
+						super.onShowCustomView(view, callback);
 
-				public void onShowCustomView(View paramView, WebChromeClient.CustomViewCallback customViewCallback) {
-					if (mCustomView != null)
-					{
-						customViewCallback.onCustomViewHidden();
-						return;
-					}
-					mCustomView = paramView;
-					inAppWebView.setVisibility(View.GONE);
-					mFullscreenContainer.setVisibility(View.VISIBLE);
-					mFullscreenContainer.addView(paramView);
-					mCustomViewCallback = customViewCallback;
-					dialog.setCustomView(mCustomView);
-					
-					/*Activity activity = cordova.getActivity();
-					mOriginalSystemUiVisibility = activity.getWindow().getDecorView().getSystemUiVisibility();
-					mOriginalOrientation = activity.getRequestedOrientation();
-					mCustomViewCallback = paramCustomViewCallback;
-					((FrameLayout)activity.getWindow().getDecorView()).addView(mCustomView, new FrameLayout.LayoutParams(-1, -1));
-					activity.getWindow().getDecorView().setSystemUiVisibility(3846);*/
-				}
-
-				// File Chooser Implemented ChromeClient
-				// For Android 5.0+
-				public boolean onShowFileChooser (WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
-					Activity activity = cordova.getActivity();
-					Context context = activity.getApplicationContext();
-
-					if(Build.VERSION.SDK_INT >= 23 && (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)) {
-						ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA}, 1);
+						enterFullScreen();
 					}
 
-					LOG.d(LOG_TAG, "File Chooser 5.0+");
-					// If callback exists, finish it.
-					if(mUploadCallbackLollipop != null) {
-						mUploadCallbackLollipop.onReceiveValue(null);
+					private void enterFullScreen() {
+						dialog.getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN | WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 					}
-					mUploadCallbackLollipop = filePathCallback;
 
-					// Create File Chooser Intent
-					Intent content = new Intent(Intent.ACTION_GET_CONTENT);
-					content.addCategory(Intent.CATEGORY_OPENABLE);
-					content.setType("image/*");
+					private void exitFullScreen() {
+						dialog.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN | WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-					// Run cordova startActivityForResult
-					cordova.startActivityForResult(InAppBrowser.this, Intent.createChooser(content, "Select File"), FILECHOOSER_REQUESTCODE_LOLLIPOP);
-					return true;
-				}
+					}
+
+					@Override
+					public void onHideCustomView() {
+
+						if (mFullscreenContainer == null || fullScreenView == null|| mCustomViewCallback == null) {
+							return;
+						}
+
+						// fixes keyboard not showing up after returning from fullscreen
+						// without it the keyboard doesn't show until app is put on pause
+						fullScreenView.clearFocus();
+						mFullscreenContainer.clearFocus();
+						inAppWebView.setFocusableInTouchMode(true);
+						inAppWebView.requestFocus();
+						inAppWebView.requestFocusFromTouch();
+
+						mFullscreenContainer.setVisibility(View.GONE);
+						fullScreenView.setVisibility(View.GONE);
+						mFullscreenContainer.removeView(fullScreenView);
+
+						inAppWebView.setVisibility(View.VISIBLE);
+
+						
+						if ((mCustomViewCallback != null) && (! mCustomViewCallback.getClass().getName().contains(".chromium."))) {
+							mCustomViewCallback.onCustomViewHidden();
+						}
+						
+						fullScreenView = null;
+
+						super.onHideCustomView();
+
+						exitFullScreen();
+					}
+
+					// File Chooser Implemented ChromeClient
+					// For Android 5.0+
+					public boolean onShowFileChooser (WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
+						Context context = activity.getApplicationContext();
+						if(	Build.VERSION.SDK_INT >= 23 
+							&& (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED 
+							|| ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)) {
+				
+								ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA}, 1);
+						}
+						if (Build.VERSION.SDK_INT >= 21) {
+							final boolean allowMultiple = fileChooserParams.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE;
+		
+							openFileInput(null, filePathCallback, allowMultiple);
+		
+							return true;
+						}
+						else {
+							return false;
+						}
+					}
 
 					// For Android 4.1+
-				public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType, String capture){
-					LOG.d(LOG_TAG, "File Chooser 4.1+");
-					// Call file chooser for Android 3.0+
-					openFileChooser(uploadMsg, acceptType);
-				}	
+					public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType, String capture){
+						openFileInput(uploadMsg, null, false);
+					}
+				};
 
-				// For Android 3.0+
-				public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType) {
-					LOG.d(LOG_TAG, "File Chooser 3.0+");
-					mUploadCallback = uploadMsg;
-					Intent content = new Intent(Intent.ACTION_GET_CONTENT);
-					content.addCategory(Intent.CATEGORY_OPENABLE);
+				inAppWebView.setWebChromeClient(mFullScreenWebView);
 
-					// run startActivityForResult
-					cordova.startActivityForResult(InAppBrowser.this, Intent.createChooser(content, "Select File"), FILECHOOSER_REQUESTCODE);
+				// Add the back and forward buttons to our action button container layout
+				/*actionButtonContainer.addView(back);
+				actionButtonContainer.addView(forward);
+
+				// Add the views to our toolbar
+				toolbar.addView(actionButtonContainer);
+				toolbar.addView(edittext);
+				toolbar.addView(close);
+
+				// Don't add the toolbar if its been disabled
+				if (getShowLocationBar()) {
+					// Add our toolbar to our main view/layout
+					main.addView(toolbar);
+				}*/
+
+				// Add our webview to our main view/layout
+				main.addView(inAppWebView);
+
+				WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+				lp.copyFrom(dialog.getWindow().getAttributes());
+				lp.width = WindowManager.LayoutParams.MATCH_PARENT;
+				lp.height = WindowManager.LayoutParams.MATCH_PARENT;
+
+				dialog.setContentView(main);
+				if(dialog != null && !dialog.isShowing()){
+					LOG.d(LOG_TAG, "called show method");
+					dialog.show();
 				}
-			};
-
-			inAppWebView.setWebChromeClient(mFullScreenWebView);
-
-			if (clearAllCache) {
-				CookieManager.getInstance().removeAllCookie();
-			} else if (clearSessionCache) {
-				CookieManager.getInstance().removeSessionCookie();
+				dialog.getWindow().setAttributes(lp);
+				// the goal of openhidden is to load the url and not display it
+				// Show() needs to be called to cause the URL to be loaded
+				if(openWindowHidden) {
+					dialog.hide();
+				}
 			}
-
-			inAppWebView.loadUrl(url);
-			inAppWebView.setId(Integer.valueOf(6));
-			inAppWebView.getSettings().setLoadWithOverviewMode(true);
-			inAppWebView.getSettings().setUseWideViewPort(useWideViewPort);
-			inAppWebView.requestFocus();
-			inAppWebView.requestFocusFromTouch();
-
-			// Add the back and forward buttons to our action button container layout
-			actionButtonContainer.addView(back);
-			actionButtonContainer.addView(forward);
-
-			// Add the views to our toolbar
-			toolbar.addView(actionButtonContainer);
-			toolbar.addView(edittext);
-			toolbar.addView(close);
-
-			// Don't add the toolbar if its been disabled
-			if (getShowLocationBar()) {
-				// Add our toolbar to our main view/layout
-				main.addView(toolbar);
-			}
-
-			// Add our webview to our main view/layout
-			main.addView(inAppWebView);
-
-			WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
-			lp.copyFrom(dialog.getWindow().getAttributes());
-			lp.width = WindowManager.LayoutParams.MATCH_PARENT;
-			lp.height = WindowManager.LayoutParams.MATCH_PARENT;
-
-			dialog.setContentView(main);
-			if(dialog != null && !dialog.isShowing()){
-				LOG.d(LOG_TAG, "called show method");
-				dialog.show();
-			}
-			dialog.getWindow().setAttributes(lp);
-			// the goal of openhidden is to load the url and not display it
-			// Show() needs to be called to cause the URL to be loaded
-			if(openWindowHidden) {
-				dialog.hide();
-			}
-		}
-	};
-	this.cordova.getActivity().runOnUiThread(runnable);
-	return "";
+		};
+		this.cordova.getActivity().runOnUiThread(runnable);
+		return "";
 	}
 
+	protected void openFileInput(final ValueCallback<Uri> fileUploadCallbackFirst, final ValueCallback<Uri[]> fileUploadCallbackSecond, final boolean allowMultiple) {
+		
+		if (mFileUploadCallbackFirst != null) {
+			mFileUploadCallbackFirst.onReceiveValue(null);
+		}
+		mFileUploadCallbackFirst = fileUploadCallbackFirst;
+
+		if (mFileUploadCallbackSecond != null) {
+			mFileUploadCallbackSecond.onReceiveValue(null);
+		}
+
+		mFileUploadCallbackSecond = fileUploadCallbackSecond;
+
+		Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+		intent.addCategory(Intent.CATEGORY_OPENABLE);
+
+		if (allowMultiple) {
+			if (Build.VERSION.SDK_INT >= 18) {
+				intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+			}
+		}
+
+		intent.setType("image/*");
+
+		cordova.startActivityForResult(InAppBrowser.this, Intent.createChooser(intent, "Add Image"), FILECHOOSER_REQUEST_CODE);
+	}
+	
 	/**
 	* Create a new plugin success result and send it back to JavaScript
 	*
 	* @param obj a JSONObject contain event payload information
 	*/
 	private void sendUpdate(JSONObject obj, boolean keepCallback) {
-	sendUpdate(obj, keepCallback, PluginResult.Status.OK);
+		sendUpdate(obj, keepCallback, PluginResult.Status.OK);
 	}
 
 	/**
@@ -1088,49 +1030,48 @@ public class InAppBrowser extends CordovaPlugin {
 	* @param status the status code to return to the JavaScript environment
 	*/
 	private void sendUpdate(JSONObject obj, boolean keepCallback, PluginResult.Status status) {
-	if (callbackContext != null) {
-		PluginResult result = new PluginResult(status, obj);
-		result.setKeepCallback(keepCallback);
-		callbackContext.sendPluginResult(result);
-		if (!keepCallback) {
-			callbackContext = null;
+		if (callbackContext != null) {
+			PluginResult result = new PluginResult(status, obj);
+			result.setKeepCallback(keepCallback);
+			callbackContext.sendPluginResult(result);
+			if (!keepCallback) {
+				callbackContext = null;
+			}
 		}
-	}
 	}
 
 	private void requestAudioPermissions(final PermissionRequest request) {
 
+		if(!cordova.hasPermission(Manifest.permission.RECORD_AUDIO) ||
+				!cordova.hasPermission(Manifest.permission.MODIFY_AUDIO_SETTINGS) ||
+				!cordova.hasPermission(Manifest.permission.CAMERA)){
+			_permissionRequest = request;
+			String[] permissions = new String[]{Manifest.permission.RECORD_AUDIO,Manifest.permission.MODIFY_AUDIO_SETTINGS, Manifest.permission.CAMERA};
 
-	if(!cordova.hasPermission(Manifest.permission.RECORD_AUDIO) ||
-			!cordova.hasPermission(Manifest.permission.MODIFY_AUDIO_SETTINGS) ||
-			!cordova.hasPermission(Manifest.permission.CAMERA)){
-		_permissionRequest = request;
-		String[] permissions = new String[]{Manifest.permission.RECORD_AUDIO,Manifest.permission.MODIFY_AUDIO_SETTINGS, Manifest.permission.CAMERA};
-
-		cordova.requestPermissions(this, MY_PERMISSIONS_RECORD_AUDIO,permissions);
-	}
-	else{
-		request.grant(request.getResources());
-	}
+			cordova.requestPermissions(this, MY_PERMISSIONS_RECORD_AUDIO,permissions);
+		}
+		else{
+			request.grant(request.getResources());
+		}
 	}
 
 	//Handling callback
 	public void onRequestPermissionsResult(int requestCode,
 									   String permissions[], int[] grantResults) {
-	switch (requestCode) {
-		case MY_PERMISSIONS_RECORD_AUDIO: {
-			if (grantResults.length > 0
-					&& grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-				// permission was granted, yay!
-				_permissionRequest.grant(_permissionRequest.getResources());
-			} else {
-				// permission denied, boo! Disable the
-				// functionality that depends on this permission.
-				_permissionRequest.deny();
+		switch (requestCode) {
+			case MY_PERMISSIONS_RECORD_AUDIO: {
+				if (grantResults.length > 0
+						&& grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+					// permission was granted, yay!
+					_permissionRequest.grant(_permissionRequest.getResources());
+				} else {
+					// permission denied, boo! Disable the
+					// functionality that depends on this permission.
+					_permissionRequest.deny();
+				}
+				_permissionRequest = null;
 			}
-			_permissionRequest = null;
 		}
-	}
 	}
 	/**
 	* Receive File Data from File Chooser
@@ -1140,243 +1081,263 @@ public class InAppBrowser extends CordovaPlugin {
 	* @param intent the data from android file chooser
 	*/
 	public void onActivityResult(int requestCode, int resultCode, Intent intent) {
-	// For Android >= 5.0
-	if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-		LOG.d(LOG_TAG, "onActivityResult (For Android >= 5.0)");
-		// If RequestCode or Callback is Invalid
-		if(requestCode != FILECHOOSER_REQUESTCODE_LOLLIPOP || mUploadCallbackLollipop == null) {
-			super.onActivityResult(requestCode, resultCode, intent);
-			return;
-		}
-		mUploadCallbackLollipop.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, intent));
-		mUploadCallbackLollipop = null;
-	}
-	else {
-		LOG.d(LOG_TAG, "onActivityResult (For Android < 5.0)");
-		// If RequestCode or Callback is Invalid
-		if(requestCode != FILECHOOSER_REQUESTCODE || mUploadCallback == null) {
-			super.onActivityResult(requestCode, resultCode, intent);
-			return;
-		}
 
-		if (null == mUploadCallback) return;
-		Uri result = intent == null || resultCode != cordova.getActivity().RESULT_OK ? null : intent.getData();
+			if (requestCode == FILECHOOSER_REQUEST_CODE) {
+				// saveProfilePicture(tempProfileImageFile);
 
-		mUploadCallback.onReceiveValue(result);
-		mUploadCallback = null;
-	}
-	}
-
-	private File createImageFile() throws IOException{
-	@SuppressLint("SimpleDateFormat") String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-	LOG.d(LOG_TAG, "createImageFile at" + timeStamp);
-	String imageFileName = "img_"+timeStamp+"_";
-	File storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-	return File.createTempFile(imageFileName,".jpg",storageDir);
+				if (resultCode == Activity.RESULT_OK) {
+					if (intent != null) {
+						// < Android 5.0
+						if (mFileUploadCallbackFirst != null) {
+							mFileUploadCallbackFirst.onReceiveValue(intent.getData());
+							mFileUploadCallbackFirst = null;
+						}
+						// > Android 5.0
+						else if (mFileUploadCallbackSecond != null) {
+							Uri[] dataUris = null;
+	
+							try {
+								if (intent.getDataString() != null) {
+									dataUris = new Uri[] { Uri.parse(intent.getDataString()) };
+								}
+								else {
+									if (Build.VERSION.SDK_INT >= 16) {
+										if (intent.getClipData() != null) {
+											final int numSelectedFiles = intent.getClipData().getItemCount();
+	
+											dataUris = new Uri[numSelectedFiles];
+	
+											for (int i = 0; i < numSelectedFiles; i++) {
+												dataUris[i] = intent.getClipData().getItemAt(i).getUri();
+											}
+										}
+									}
+								}
+							}
+							catch (Exception ignored) { }
+	
+							mFileUploadCallbackSecond.onReceiveValue(dataUris);
+							mFileUploadCallbackSecond = null;
+						}
+					}
+				}
+				else {
+					if (mFileUploadCallbackFirst != null) {
+						mFileUploadCallbackFirst.onReceiveValue(null);
+						mFileUploadCallbackFirst = null;
+					}
+					else if (mFileUploadCallbackSecond != null) {
+						mFileUploadCallbackSecond.onReceiveValue(null);
+						mFileUploadCallbackSecond = null;
+					}
+				}
+			}
 	}
 
 	/**
 	* The webview client receives notifications about appView
 	*/
 	public class InAppBrowserClient extends WebViewClient {
-	EditText edittext;
-	CordovaWebView webView;
+		// EditText edittext;
+		CordovaWebView webView;
 
-	/**
-	 * Constructor.
-	 *
-	 * @param webView
-	 * @param mEditText
-	 */
-	public InAppBrowserClient(CordovaWebView webView, EditText mEditText) {
-		this.webView = webView;
-		this.edittext = mEditText;
-	}
-
-	/**
-	 * Override the URL that should be loaded
-	 *
-	 * This handles a small subset of all the URIs that would be encountered.
-	 *
-	 * @param webView
-	 * @param url
-	 */
-	@Override
-	public boolean shouldOverrideUrlLoading(WebView webView, String url) {
-		if (url.startsWith(WebView.SCHEME_TEL)) {
-			try {
-				Intent intent = new Intent(Intent.ACTION_DIAL);
-				intent.setData(Uri.parse(url));
-				cordova.getActivity().startActivity(intent);
-				return true;
-			} catch (android.content.ActivityNotFoundException e) {
-				LOG.e(LOG_TAG, "Error dialing " + url + ": " + e.toString());
-			}
-		} else if (url.startsWith("geo:") || url.startsWith(WebView.SCHEME_MAILTO) || url.startsWith("market:") || url.startsWith("intent:")) {
-			try {
-				Intent intent = new Intent(Intent.ACTION_VIEW);
-				intent.setData(Uri.parse(url));
-				cordova.getActivity().startActivity(intent);
-				return true;
-			} catch (android.content.ActivityNotFoundException e) {
-				LOG.e(LOG_TAG, "Error with " + url + ": " + e.toString());
-			}
+		public InAppBrowserClient(CordovaWebView webView) {
+			this.webView = webView;
 		}
-		// If sms:5551212?body=This is the message
-		else if (url.startsWith("sms:")) {
-			try {
-				Intent intent = new Intent(Intent.ACTION_VIEW);
 
-				// Get address
-				String address = null;
-				int parmIndex = url.indexOf('?');
-				if (parmIndex == -1) {
-					address = url.substring(4);
-				} else {
-					address = url.substring(4, parmIndex);
+		/**
+		 * Constructor.
+		 *
+		 * @param webView
+		 * @param mEditText
+		 */
+		/* public InAppBrowserClient(CordovaWebView webView, EditText mEditText) {
+			this.webView = webView;
+			this.edittext = mEditText;
+		} */
 
-					// If body, then set sms body
-					Uri uri = Uri.parse(url);
-					String query = uri.getQuery();
-					if (query != null) {
-						if (query.startsWith("body=")) {
-							intent.putExtra("sms_body", query.substring(5));
+		/**
+		 * Override the URL that should be loaded
+		 *
+		 * This handles a small subset of all the URIs that would be encountered.
+		 *
+		 * @param webView
+		 * @param url
+		 */
+		@Override
+		public boolean shouldOverrideUrlLoading(WebView webView, String url) {
+			if (url.startsWith(WebView.SCHEME_TEL)) {
+				try {
+					Intent intent = new Intent(Intent.ACTION_DIAL);
+					intent.setData(Uri.parse(url));
+					cordova.getActivity().startActivity(intent);
+					return true;
+				} catch (android.content.ActivityNotFoundException e) {
+					LOG.e(LOG_TAG, "Error dialing " + url + ": " + e.toString());
+				}
+			} else if (url.startsWith("geo:") || url.startsWith(WebView.SCHEME_MAILTO) || url.startsWith("market:") || url.startsWith("intent:")) {
+				try {
+					Intent intent = new Intent(Intent.ACTION_VIEW);
+					intent.setData(Uri.parse(url));
+					cordova.getActivity().startActivity(intent);
+					return true;
+				} catch (android.content.ActivityNotFoundException e) {
+					LOG.e(LOG_TAG, "Error with " + url + ": " + e.toString());
+				}
+			}
+			// If sms:5551212?body=This is the message
+			else if (url.startsWith("sms:")) {
+				try {
+					Intent intent = new Intent(Intent.ACTION_VIEW);
+
+					// Get address
+					String address = null;
+					int parmIndex = url.indexOf('?');
+					if (parmIndex == -1) {
+						address = url.substring(4);
+					} else {
+						address = url.substring(4, parmIndex);
+
+						// If body, then set sms body
+						Uri uri = Uri.parse(url);
+						String query = uri.getQuery();
+						if (query != null) {
+							if (query.startsWith("body=")) {
+								intent.putExtra("sms_body", query.substring(5));
+							}
 						}
 					}
+					intent.setData(Uri.parse("sms:" + address));
+					intent.putExtra("address", address);
+					intent.setType("vnd.android-dir/mms-sms");
+					cordova.getActivity().startActivity(intent);
+					return true;
+				} catch (android.content.ActivityNotFoundException e) {
+					LOG.e(LOG_TAG, "Error sending sms " + url + ":" + e.toString());
 				}
-				intent.setData(Uri.parse("sms:" + address));
-				intent.putExtra("address", address);
-				intent.setType("vnd.android-dir/mms-sms");
-				cordova.getActivity().startActivity(intent);
-				return true;
-			} catch (android.content.ActivityNotFoundException e) {
-				LOG.e(LOG_TAG, "Error sending sms " + url + ":" + e.toString());
+			}
+			return false;
+		}
+
+
+		/*
+		* onPageStarted fires the LOAD_START_EVENT
+		*
+		* @param view
+		* @param url
+		* @param favicon
+		*/
+		@Override
+		public void onPageStarted(WebView view, String url, Bitmap favicon) {
+			super.onPageStarted(view, url, favicon);
+			String newloc = "";
+			if (url.startsWith("http:") || url.startsWith("https:") || url.startsWith("file:")) {
+				newloc = url;
+			}
+			else
+			{
+				// Assume that everything is HTTP at this point, because if we don't specify,
+				// it really should be.  Complain loudly about this!!!
+				LOG.e(LOG_TAG, "Possible Uncaught/Unknown URI");
+				newloc = "http://" + url;
+			}
+
+			/* // Update the UI if we haven't already
+			if (!newloc.equals(edittext.getText().toString())) {
+				edittext.setText(newloc);
+			} */
+
+			try {
+				JSONObject obj = new JSONObject();
+				obj.put("type", LOAD_START_EVENT);
+				obj.put("url", newloc);
+				sendUpdate(obj, true);
+			} catch (JSONException ex) {
+				LOG.e(LOG_TAG, "URI passed in has caused a JSON error.");
 			}
 		}
-		return false;
-	}
 
+		public void onPageFinished(WebView view, String url) {
+			super.onPageFinished(view, url);
 
-	/*
-	 * onPageStarted fires the LOAD_START_EVENT
-	 *
-	 * @param view
-	 * @param url
-	 * @param favicon
-	 */
-	@Override
-	public void onPageStarted(WebView view, String url, Bitmap favicon) {
-		super.onPageStarted(view, url, favicon);
-		String newloc = "";
-		if (url.startsWith("http:") || url.startsWith("https:") || url.startsWith("file:")) {
-			newloc = url;
-		}
-		else
-		{
-			// Assume that everything is HTTP at this point, because if we don't specify,
-			// it really should be.  Complain loudly about this!!!
-			LOG.e(LOG_TAG, "Possible Uncaught/Unknown URI");
-			newloc = "http://" + url;
-		}
+			// CB-10395 InAppBrowser's WebView not storing cookies reliable to local device storage
+			if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+				CookieManager.getInstance().flush();
+			} else {
+				CookieSyncManager.getInstance().sync();
+			}
 
-		// Update the UI if we haven't already
-		if (!newloc.equals(edittext.getText().toString())) {
-			edittext.setText(newloc);
-		 }
+			if (android.os.Build.VERSION.SDK_INT == android.os.Build.VERSION_CODES.KITKAT){
+					view.getSettings().setJavaScriptEnabled(true);
+			}
 
-		try {
-			JSONObject obj = new JSONObject();
-			obj.put("type", LOAD_START_EVENT);
-			obj.put("url", newloc);
-			sendUpdate(obj, true);
-		} catch (JSONException ex) {
-			LOG.e(LOG_TAG, "URI passed in has caused a JSON error.");
-		}
-	}
+			// https://issues.apache.org/jira/browse/CB-11248
+			view.clearFocus();
+			view.requestFocus();
 
-
-
-	public void onPageFinished(WebView view, String url) {
-		super.onPageFinished(view, url);
-
-		// CB-10395 InAppBrowser's WebView not storing cookies reliable to local device storage
-		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-			CookieManager.getInstance().flush();
-		} else {
-			CookieSyncManager.getInstance().sync();
-		}
-
-		if (android.os.Build.VERSION.SDK_INT == android.os.Build.VERSION_CODES.KITKAT){
-				view.getSettings().setJavaScriptEnabled(true);
-		}
-
-		// https://issues.apache.org/jira/browse/CB-11248
-		view.clearFocus();
-		view.requestFocus();
-
-		try {
-			JSONObject obj = new JSONObject();
-			obj.put("type", LOAD_STOP_EVENT);
-			obj.put("url", url);
-
-			sendUpdate(obj, true);
-		} catch (JSONException ex) {
-			LOG.d(LOG_TAG, "Should never happen");
-		}
-	}
-
-	public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
-		super.onReceivedError(view, errorCode, description, failingUrl);
-
-		try {
-			JSONObject obj = new JSONObject();
-			obj.put("type", LOAD_ERROR_EVENT);
-			obj.put("url", failingUrl);
-			obj.put("code", errorCode);
-			obj.put("message", description);
-
-			sendUpdate(obj, true, PluginResult.Status.ERROR);
-		} catch (JSONException ex) {
-			LOG.d(LOG_TAG, "Should never happen");
-		}
-	}
-
-	/**
-	 * On received http auth request.
-	 */
-	@Override
-	public void onReceivedHttpAuthRequest(WebView view, HttpAuthHandler handler, String host, String realm) {
-
-		// Check if there is some plugin which can resolve this auth challenge
-		PluginManager pluginManager = null;
-		try {
-			Method gpm = webView.getClass().getMethod("getPluginManager");
-			pluginManager = (PluginManager)gpm.invoke(webView);
-		} catch (NoSuchMethodException e) {
-			LOG.d(LOG_TAG, e.getLocalizedMessage());
-		} catch (IllegalAccessException e) {
-			LOG.d(LOG_TAG, e.getLocalizedMessage());
-		} catch (InvocationTargetException e) {
-			LOG.d(LOG_TAG, e.getLocalizedMessage());
-		}
-
-		if (pluginManager == null) {
 			try {
-				Field pmf = webView.getClass().getField("pluginManager");
-				pluginManager = (PluginManager)pmf.get(webView);
-			} catch (NoSuchFieldException e) {
+				JSONObject obj = new JSONObject();
+				obj.put("type", LOAD_STOP_EVENT);
+				obj.put("url", url);
+
+				sendUpdate(obj, true);
+			} catch (JSONException ex) {
+				LOG.d(LOG_TAG, "Should never happen");
+			}
+		}
+
+		public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+			super.onReceivedError(view, errorCode, description, failingUrl);
+
+			try {
+				JSONObject obj = new JSONObject();
+				obj.put("type", LOAD_ERROR_EVENT);
+				obj.put("url", failingUrl);
+				obj.put("code", errorCode);
+				obj.put("message", description);
+
+				sendUpdate(obj, true, PluginResult.Status.ERROR);
+			} catch (JSONException ex) {
+				LOG.d(LOG_TAG, "Should never happen");
+			}
+		}
+
+		/**
+		 * On received http auth request.
+		 */
+		@Override
+		public void onReceivedHttpAuthRequest(WebView view, HttpAuthHandler handler, String host, String realm) {
+
+			// Check if there is some plugin which can resolve this auth challenge
+			PluginManager pluginManager = null;
+			try {
+				Method gpm = webView.getClass().getMethod("getPluginManager");
+				pluginManager = (PluginManager)gpm.invoke(webView);
+			} catch (NoSuchMethodException e) {
 				LOG.d(LOG_TAG, e.getLocalizedMessage());
 			} catch (IllegalAccessException e) {
 				LOG.d(LOG_TAG, e.getLocalizedMessage());
+			} catch (InvocationTargetException e) {
+				LOG.d(LOG_TAG, e.getLocalizedMessage());
 			}
-		}
 
-		if (pluginManager != null && pluginManager.onReceivedHttpAuthRequest(webView, new CordovaHttpAuthHandler(handler), host, realm)) {
-			return;
-		}
+			if (pluginManager == null) {
+				try {
+					Field pmf = webView.getClass().getField("pluginManager");
+					pluginManager = (PluginManager)pmf.get(webView);
+				} catch (NoSuchFieldException e) {
+					LOG.d(LOG_TAG, e.getLocalizedMessage());
+				} catch (IllegalAccessException e) {
+					LOG.d(LOG_TAG, e.getLocalizedMessage());
+				}
+			}
 
-		// By default handle 401 like we'd normally do!
-		super.onReceivedHttpAuthRequest(view, handler, host, realm);
+			if (pluginManager != null && pluginManager.onReceivedHttpAuthRequest(webView, new CordovaHttpAuthHandler(handler), host, realm)) {
+				return;
+			}
+
+			// By default handle 401 like we'd normally do!
+			super.onReceivedHttpAuthRequest(view, handler, host, realm);
+		}
 	}
-	}
-	}
+}
