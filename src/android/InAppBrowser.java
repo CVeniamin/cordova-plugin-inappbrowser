@@ -86,6 +86,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.StringTokenizer;
+import java.util.ArrayList;
+import java.util.List;
 
 @SuppressLint("SetJavaScriptEnabled")
 public class InAppBrowser extends CordovaPlugin {
@@ -126,8 +128,7 @@ public class InAppBrowser extends CordovaPlugin {
 
 	private final static int FILECHOOSER_REQUEST_CODE = 5372;
 
-	private final int MY_PERMISSIONS_RECORD_AUDIO = 111;
-	private final int MY_PERMISSIONS_MODIFY_AUDIO = 112;
+	private final int PERMISSIONS_CAMERA_AUDIO = 112;
 
 	private PermissionRequest _permissionRequest;
 
@@ -139,7 +140,7 @@ public class InAppBrowser extends CordovaPlugin {
 
 	/** File upload callback for Android 5.0+ */
 	protected ValueCallback<Uri[]> mFileUploadCallbackSecond;
-
+	
 	/**
 	* Executes the request and returns PluginResult.
 	*
@@ -312,7 +313,9 @@ public class InAppBrowser extends CordovaPlugin {
 			this.cordova.getActivity().runOnUiThread(new Runnable() {
 				@Override
 				public void run() {
-					goToSettings(activity);
+					String title = "Developer Options Detected!";
+					String message = "In order for GTribe to work properly, on your device, please uncheck the \"Don't keep activities\" option.";
+					goToSettings(activity, title, message);
 				}
 			});
 		}
@@ -323,10 +326,10 @@ public class InAppBrowser extends CordovaPlugin {
 		return true;
 	}
 
-	private void goToSettings(final Activity activity){
+	private void goToSettings(final Activity activity, String title, String message){
 		new AlertDialog.Builder(activity)
-		.setTitle("Developer Options Detected!")
-		.setMessage("In order for GTribe to work properly, on your device, please uncheck the \"Don't keep activities\" option.")
+		.setTitle(title)
+		.setMessage(message)
 		.setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface negativeDialog, int whichButton) {
 				if(negativeDialog != null){
@@ -822,12 +825,29 @@ public class InAppBrowser extends CordovaPlugin {
 
 					@Override
 					public void onPermissionRequest(final PermissionRequest request) {
-						activity.runOnUiThread(new Runnable() {
-							@Override
-							public void run() {
-								requestAudioPermissions(request);
+						
+						String originHost = request.getOrigin().getHost();
+						String originProtocol = request.getOrigin().getScheme();
+
+						String localHost = Uri.parse(url).getHost();
+						String localProtocol = Uri.parse(url).getScheme();
+
+						if(localHost.equals(originHost) && localProtocol.equals(originProtocol)) {
+							// Android 5, 5.1 no need to ask for permissions
+							if (Build.VERSION_CODES.LOLLIPOP <= Build.VERSION.SDK_INT && Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+								request.grant(request.getResources());
+							} else if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+								// Android 6+ ask for permissions dynamically
+								activity.runOnUiThread(new Runnable() {
+									@Override
+									public void run() {
+										requestAVPermissions(activity, activity.getApplicationContext(), request);
+									}
+								});
 							}
-						});
+						} else {
+							request.deny();
+						}
 					}
 
 					@Override
@@ -921,20 +941,20 @@ public class InAppBrowser extends CordovaPlugin {
 					// For Android 5.0+
 					public boolean onShowFileChooser (WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
 						Context context = activity.getApplicationContext();
-						if(	Build.VERSION.SDK_INT >= 23 
-							&& (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED 
-							|| ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)) {
-				
-								ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA}, 1);
+						if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M 
+							&& (!cordova.hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE))) {
+
+								cordova.requestPermissions(InAppBrowser.this, 111,
+								new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE});
 						}
-						if (Build.VERSION.SDK_INT >= 21) {
+						if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
 							final boolean allowMultiple = fileChooserParams.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE;
 		
 							openFileInput(null, filePathCallback, allowMultiple);
-		
+							super.onShowFileChooser(webView, filePathCallback, fileChooserParams);
 							return true;
-						}
-						else {
+						} else {
+							super.onShowFileChooser(webView, filePathCallback, fileChooserParams);
 							return false;
 						}
 					}
@@ -944,23 +964,8 @@ public class InAppBrowser extends CordovaPlugin {
 						openFileInput(uploadMsg, null, false);
 					}
 				};
-
+				
 				inAppWebView.setWebChromeClient(mFullScreenWebView);
-
-				// Add the back and forward buttons to our action button container layout
-				/*actionButtonContainer.addView(back);
-				actionButtonContainer.addView(forward);
-
-				// Add the views to our toolbar
-				toolbar.addView(actionButtonContainer);
-				toolbar.addView(edittext);
-				toolbar.addView(close);
-
-				// Don't add the toolbar if its been disabled
-				if (getShowLocationBar()) {
-					// Add our toolbar to our main view/layout
-					main.addView(toolbar);
-				}*/
 
 				// Add our webview to our main view/layout
 				main.addView(inAppWebView);
@@ -988,7 +993,6 @@ public class InAppBrowser extends CordovaPlugin {
 	}
 
 	protected void openFileInput(final ValueCallback<Uri> fileUploadCallbackFirst, final ValueCallback<Uri[]> fileUploadCallbackSecond, final boolean allowMultiple) {
-		
 		if (mFileUploadCallbackFirst != null) {
 			mFileUploadCallbackFirst.onReceiveValue(null);
 		}
@@ -1040,39 +1044,151 @@ public class InAppBrowser extends CordovaPlugin {
 		}
 	}
 
-	private void requestAudioPermissions(final PermissionRequest request) {
+	private void requestAVPermissions(Activity activity, Context context, final PermissionRequest request) {
+		_permissionRequest =  request;
 
-		if(!cordova.hasPermission(Manifest.permission.RECORD_AUDIO) ||
-				!cordova.hasPermission(Manifest.permission.MODIFY_AUDIO_SETTINGS) ||
-				!cordova.hasPermission(Manifest.permission.CAMERA)){
-			_permissionRequest = request;
-			String[] permissions = new String[]{Manifest.permission.RECORD_AUDIO,Manifest.permission.MODIFY_AUDIO_SETTINGS, Manifest.permission.CAMERA};
+		List<String> permissionList = new ArrayList<String>();
 
-			cordova.requestPermissions(this, MY_PERMISSIONS_RECORD_AUDIO,permissions);
+		final String[] requestedPermissions = request.getResources();
+		for (String req : requestedPermissions) {
+			
+			if (req.equals(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) {
+
+				if(!cordova.hasPermission(Manifest.permission.CAMERA)){
+					permissionList.add(Manifest.permission.CAMERA);
+				}
+
+			} else if (req.equals(PermissionRequest.RESOURCE_AUDIO_CAPTURE)){
+				boolean canRecordAudio = cordova.hasPermission(Manifest.permission.RECORD_AUDIO);
+				boolean canModifyAudio = cordova.hasPermission(Manifest.permission.MODIFY_AUDIO_SETTINGS);
+				boolean hasBluetooth = cordova.hasPermission(Manifest.permission.BLUETOOTH);
+
+				if (!canRecordAudio) {
+					permissionList.add(Manifest.permission.RECORD_AUDIO);
+				}
+
+				if (!canModifyAudio){
+					permissionList.add(Manifest.permission.MODIFY_AUDIO_SETTINGS);
+				}
+				
+				if (!hasBluetooth){
+					permissionList.add(Manifest.permission.BLUETOOTH);
+				}
+			}
 		}
-		else{
+
+		String[] permissions = new String[permissionList.size()];
+		permissionList.toArray(permissions);
+
+		if (hasAllPermissions(permissions)){
 			request.grant(request.getResources());
+		} else {
+			cordova.requestPermissions(InAppBrowser.this, PERMISSIONS_CAMERA_AUDIO, permissions);
 		}
 	}
 
 	//Handling callback
-	public void onRequestPermissionsResult(int requestCode,
+	@Override
+	public void onRequestPermissionResult(int requestCode,
 									   String permissions[], int[] grantResults) {
-		switch (requestCode) {
-			case MY_PERMISSIONS_RECORD_AUDIO: {
-				if (grantResults.length > 0
-						&& grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-					// permission was granted, yay!
-					_permissionRequest.grant(_permissionRequest.getResources());
-				} else {
-					// permission denied, boo! Disable the
-					// functionality that depends on this permission.
-					_permissionRequest.deny();
-				}
-				_permissionRequest = null;
+		if(permissions.length == 0){
+			return;
+		}
+		if(!allPermissionsAreGranted(grantResults)){
+			if(somePermissionsDeniedForever(permissions)) {
+				Activity activity = cordova.getActivity();
+
+				new AlertDialog.Builder(activity)
+				.setTitle("Permissions Required")
+				.setMessage("You have forcefully denied some of the required permissions " +
+						"for this action. Please open settings, go to permissions and allow them.")
+				.setPositiveButton("Settings", new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface positiveDialog, int which) {
+						Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+								Uri.fromParts("package", cordova.getActivity().getPackageName(), null));
+						intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+						if(activity != null){
+							activity.startActivity(intent);
+							activity.finish();
+						}
+						if(positiveDialog != null){
+							positiveDialog.dismiss();
+							positiveDialog = null;
+						}
+					}
+				})
+				.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface negativeDialog, int which) {
+						if(negativeDialog != null){
+							negativeDialog.dismiss();
+							negativeDialog = null;
+						}
+					}
+				})
+				.setCancelable(false)
+				.create()
+				.show();
+			}
+		} else {
+			switch (requestCode) {
+				case PERMISSIONS_CAMERA_AUDIO:
+					if (allPermissionsAreGranted(grantResults)) {
+						if (_permissionRequest != null){
+							_permissionRequest.grant(_permissionRequest.getResources());
+						}
+	
+					} else {
+						if (_permissionRequest != null){
+							_permissionRequest.deny();
+						}
+					}
+					_permissionRequest = null;
+					break;
 			}
 		}
 	}
+	
+	private boolean hasAllPermissions(String[] permissions) {
+
+        for (String permission : permissions) {
+            if(!cordova.hasPermission(permission)) {
+                return false;
+            }
+        }
+
+        return true;
+	}
+
+	private boolean somePermissionsDeniedForever(String[] permissions){
+		Activity activity = cordova.getActivity();
+		boolean somePermissionsForeverDenied = false;
+
+		for(String permission: permissions){
+			if(!ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)){
+				if(ActivityCompat.checkSelfPermission(activity, permission) != PackageManager.PERMISSION_GRANTED){
+					somePermissionsForeverDenied = true;
+				}
+			}
+		}
+
+		return somePermissionsForeverDenied;
+	}
+
+	private boolean allPermissionsAreGranted(int[] grantResults){
+		if (grantResults.length > 0){
+			for(int i : grantResults){
+				if (i != PackageManager.PERMISSION_GRANTED){
+					return false;
+				}
+			}
+			return true;
+		}
+		return false;
+	}
+
 	/**
 	* Receive File Data from File Chooser
 	*
@@ -1080,58 +1196,59 @@ public class InAppBrowser extends CordovaPlugin {
 	* @param resultCode the result code returned from android system
 	* @param intent the data from android file chooser
 	*/
+
+	@Override
 	public void onActivityResult(int requestCode, int resultCode, Intent intent) {
 
-			if (requestCode == FILECHOOSER_REQUEST_CODE) {
-				// saveProfilePicture(tempProfileImageFile);
+		if (requestCode == FILECHOOSER_REQUEST_CODE) {
 
-				if (resultCode == Activity.RESULT_OK) {
-					if (intent != null) {
-						// < Android 5.0
-						if (mFileUploadCallbackFirst != null) {
-							mFileUploadCallbackFirst.onReceiveValue(intent.getData());
-							mFileUploadCallbackFirst = null;
-						}
-						// > Android 5.0
-						else if (mFileUploadCallbackSecond != null) {
-							Uri[] dataUris = null;
-	
-							try {
-								if (intent.getDataString() != null) {
-									dataUris = new Uri[] { Uri.parse(intent.getDataString()) };
-								}
-								else {
-									if (Build.VERSION.SDK_INT >= 16) {
-										if (intent.getClipData() != null) {
-											final int numSelectedFiles = intent.getClipData().getItemCount();
-	
-											dataUris = new Uri[numSelectedFiles];
-	
-											for (int i = 0; i < numSelectedFiles; i++) {
-												dataUris[i] = intent.getClipData().getItemAt(i).getUri();
-											}
+			if (resultCode == Activity.RESULT_OK) {
+				if (intent != null) {
+					// < Android 5.0
+					if (mFileUploadCallbackFirst != null) {
+						mFileUploadCallbackFirst.onReceiveValue(intent.getData());
+						mFileUploadCallbackFirst = null;
+					}
+					// > Android 5.0
+					else if (mFileUploadCallbackSecond != null) {
+						Uri[] dataUris = null;
+
+						try {
+							if (intent.getDataString() != null) {
+								dataUris = new Uri[] { Uri.parse(intent.getDataString()) };
+							}
+							else {
+								if (Build.VERSION.SDK_INT >= 16) {
+									if (intent.getClipData() != null) {
+										final int numSelectedFiles = intent.getClipData().getItemCount();
+
+										dataUris = new Uri[numSelectedFiles];
+
+										for (int i = 0; i < numSelectedFiles; i++) {
+											dataUris[i] = intent.getClipData().getItemAt(i).getUri();
 										}
 									}
 								}
 							}
-							catch (Exception ignored) { }
-	
-							mFileUploadCallbackSecond.onReceiveValue(dataUris);
-							mFileUploadCallbackSecond = null;
 						}
-					}
-				}
-				else {
-					if (mFileUploadCallbackFirst != null) {
-						mFileUploadCallbackFirst.onReceiveValue(null);
-						mFileUploadCallbackFirst = null;
-					}
-					else if (mFileUploadCallbackSecond != null) {
-						mFileUploadCallbackSecond.onReceiveValue(null);
+						catch (Exception ignored) { }
+
+						mFileUploadCallbackSecond.onReceiveValue(dataUris);
 						mFileUploadCallbackSecond = null;
 					}
 				}
 			}
+			else {
+				if (mFileUploadCallbackFirst != null) {
+					mFileUploadCallbackFirst.onReceiveValue(null);
+					mFileUploadCallbackFirst = null;
+				}
+				else if (mFileUploadCallbackSecond != null) {
+					mFileUploadCallbackSecond.onReceiveValue(null);
+					mFileUploadCallbackSecond = null;
+				}
+			}
+		}
 	}
 
 	/**
