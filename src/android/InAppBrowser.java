@@ -822,7 +822,7 @@ public class InAppBrowser extends CordovaPlugin {
 					View fullScreenView = null;
 					CustomViewCallback mCustomViewCallback = null;
 					Window window = activity.getWindow();
-
+					
 					@Override
 					public void onPermissionRequest(final PermissionRequest request) {
 						
@@ -1048,22 +1048,24 @@ public class InAppBrowser extends CordovaPlugin {
 		_permissionRequest =  request;
 
 		List<String> permissionList = new ArrayList<String>();
+		PackageManager pm = activity.getApplicationContext().getPackageManager();
 
 		final String[] requestedPermissions = request.getResources();
 		for (String req : requestedPermissions) {
 			
 			if (req.equals(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) {
 
-				if(!cordova.hasPermission(Manifest.permission.CAMERA)){
+				if(!cordova.hasPermission(Manifest.permission.CAMERA) && pm.hasSystemFeature(PackageManager.FEATURE_CAMERA)){
 					permissionList.add(Manifest.permission.CAMERA);
 				}
 
 			} else if (req.equals(PermissionRequest.RESOURCE_AUDIO_CAPTURE)){
 				boolean canRecordAudio = cordova.hasPermission(Manifest.permission.RECORD_AUDIO);
 				boolean canModifyAudio = cordova.hasPermission(Manifest.permission.MODIFY_AUDIO_SETTINGS);
+
 				boolean hasBluetooth = cordova.hasPermission(Manifest.permission.BLUETOOTH);
 
-				if (!canRecordAudio) {
+				if (!canRecordAudio && pm.hasSystemFeature(PackageManager.FEATURE_MICROPHONE)) {
 					permissionList.add(Manifest.permission.RECORD_AUDIO);
 				}
 
@@ -1071,7 +1073,7 @@ public class InAppBrowser extends CordovaPlugin {
 					permissionList.add(Manifest.permission.MODIFY_AUDIO_SETTINGS);
 				}
 				
-				if (!hasBluetooth){
+				if (!hasBluetooth && pm.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH)){
 					permissionList.add(Manifest.permission.BLUETOOTH);
 				}
 			}

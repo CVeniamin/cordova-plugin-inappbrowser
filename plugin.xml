@@ -50,6 +50,18 @@
             <meta-data android:name="com.facebook.sdk.AutoLogAppEventsEnabled" android:value="false" />
         </config-file> -->
 
+        <config-file target="AndroidManifest.xml" parent="/*">
+            <uses-permission android:name="android.permission.RECORD_AUDIO" />
+            <uses-feature android:name="android.hardware.microphone" required="false"/>
+
+            <uses-permission android:name="android.permission.CAMERA" />
+            <uses-feature android:name="android.hardware.camera" required="false"/>
+
+            <uses-permission android:name="android.permission.BLUETOOTH" />
+            <uses-feature android:name="android.hardware.bluetooth" required="false"/>
+
+        </config-file>
+
         <source-file src="src/android/InAppBrowser.java" target-dir="src/org/apache/cordova/inappbrowser" />
         <source-file src="src/android/InAppBrowserDialog.java" target-dir="src/org/apache/cordova/inappbrowser" />
         <source-file src="src/android/InAppChromeClient.java" target-dir="src/org/apache/cordova/inappbrowser" />
