@@ -638,6 +638,13 @@ static IMP WKOriginalImp;
 
 @end //CDVInAppBrowser
 
+// expose private configuration value required for background operation
+@interface WKWebViewConfiguration ()
+
+@property (setter=_setAlwaysRunsAtForegroundPriority:, nonatomic) bool _alwaysRunsAtForegroundPriority;
+
+@end
+
 #pragma mark CDVInAppBrowserViewController
 
 @implementation CDVInAppBrowserViewController
