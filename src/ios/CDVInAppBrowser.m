@@ -679,7 +679,7 @@ BOOL isExiting = FALSE;
     WKWebViewConfiguration* configuration = [[WKWebViewConfiguration alloc] init];
     configuration.userContentController = userContentController;
     configuration.processPool = [[CDVWKProcessPoolFactory sharedFactory] sharedProcessPool];
-	configuration._alwaysRunsAtForegroundPriority = [self.commandDelegate.settings cordovaBoolSettingForKey:@"IABAtForeground" defaultValue:YES];
+	configuration._alwaysRunsAtForegroundPriority = YES;
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000
     if(@available(iOS 10.0, *)) {
         configuration.mediaTypesRequiringUserActionForPlayback = WKAudiovisualMediaTypeNone;
