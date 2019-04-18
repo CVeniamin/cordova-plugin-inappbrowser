@@ -25,13 +25,16 @@ import android.content.Context;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.view.View;
 /**
  * Created by Oliver on 22/11/2013.
  */
 public class InAppBrowserDialog extends Dialog {
     Context context;
     InAppBrowser inAppBrowser = null;
-
+	
+	View mCustomView;
+	
     public InAppBrowserDialog(Context context, int theme) {
         super(context, theme);
         this.context = context;
@@ -40,14 +43,21 @@ public class InAppBrowserDialog extends Dialog {
     public void setInAppBroswer(InAppBrowser browser) {
         this.inAppBrowser = browser;
     }
+	
+	public void setCustomView(View v) {
+        this.mCustomView = v;
+    }
 
     public void onBackPressed () {
+		if (this.mCustomView != null) {
+			this.inAppBrowser.hideCustomView();
+		}
         if (this.inAppBrowser == null) {
             this.dismiss();
         } else {
             // better to go through the in inAppBrowser
             // because it does a clean up
-            if (this.inAppBrowser.hardwareBack() && this.inAppBrowser.canGoBack()) {
+            if (this.mCustomView == null && this.inAppBrowser.hardwareBack() && this.inAppBrowser.canGoBack()) {
                 this.inAppBrowser.goBack();
             }  else {
                 this.inAppBrowser.closeDialog();
